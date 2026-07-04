@@ -4,8 +4,6 @@
 
 </div>
 
-![image description](assets/teaser_internvla-a1.jpg)
-
 [![Paper](https://img.shields.io/badge/Paper-arXiv-red.svg)](https://internrobotics.github.io/internvla-a1.github.io/paper/InternVLA_A1.pdf)
 [![Data](https://img.shields.io/badge/Model-HuggingFace-blue?logo=huggingface)](https://huggingface.co/InternRobotics/InternVLA-A1-3B)
 [![Data](https://img.shields.io/badge/Data-HuggingFace-blue?logo=huggingface)](https://huggingface.co/datasets/InternRobotics/InternData-A1)

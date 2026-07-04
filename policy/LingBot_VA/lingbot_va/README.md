@@ -8,10 +8,6 @@
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/License-Apache--2.0-green"></a>
 </p>
 
-<p align="center">
-  <img src="assets/teaser_v3.png" width="100%">
-</p>
-
 
 
 https://github.com/user-attachments/assets/cec7b7a6-953b-4fa4-8f1a-47efc1fce547

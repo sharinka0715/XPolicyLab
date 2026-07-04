@@ -2,8 +2,6 @@
 
 DM0 is a vision-language-action model built on a dual-expert architecture with merged attention and Flow Matching for continuous action generation. Unlike the CogACT/OFT models, DM0 generates action trajectories through a diffusion-based approach, producing a chunk of future actions in one forward pass.
 
-![](../resources/dm0_arch.png)
-
 > This tutorial follows the same workflow as the main [Tutorial](Tutorial.md) but focuses on DM0-specific configurations. Please ensure you have completed the [Installation](Tutorial.md#installation) steps before proceeding.
 
 ## Pretrained Model

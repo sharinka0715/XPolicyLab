@@ -10,18 +10,6 @@ What you should expect:
 
 ## Scene
 
-Our scene setup is shown below:
-
-<p align="center">
-  <img src="assets/fold_towel_demo/desktop_setup.png" alt="desktop setup" width="400"/>
-</p>
-
-The desktop and the R1 Lite are viewed from the side as follows:
-
-<p align="center">
-  <img src="assets/fold_towel_demo/robot_setup.png" alt="robot_setup" width="400"/>
-</p>
-
 After calibrating the zero point, you can run the following command on the robot to adjust the R1 Lite to the appropriate position (assuming you have already logged into the robot via SSH):
 
 ```bash

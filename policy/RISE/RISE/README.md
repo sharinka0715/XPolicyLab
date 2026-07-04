@@ -7,9 +7,6 @@
 </div>
 
 
-<img src="rise_assets/teaser.gif" alt="RISE demo" width="100%">
-</img>
-
 ## 🔥 Highlights
 
 <!-- RISE is a self-improving robot policy framework that turns world models into a practical learning environment for real-world manipulation. In short, we make the following three key contributions: -->

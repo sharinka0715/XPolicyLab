@@ -20,8 +20,6 @@ embodied data ingestion by jointly learning dynamics, policy,
 and visual forecasting, assigning distinct roles to data of varying
 quality.
 
-![](assets/lda_teaser.png)
-
 ## 📋 Table of Contents
 - [✨ Key Features](#-key-features)
 - [🛠 Environment Setup](#-environment-setup)
@@ -83,10 +81,6 @@ or you could directly download the pretrained from the following link:
    - `DINO-ViT-S`: [link](https://huggingface.co/collections/facebook/dinov3-68924841bd6b561778e31009)🤗
 
 ## 🧩 Model Architecture
-
-<div align="center">
-<img src="./assets/LDA_pipeline.png" width="700" alt="LDA Architecture">
-</div>
 
 LDA jointly denoises action chunks and future visual latent under multiple co-training objectives. Conditioned on VLM tokens, diffusion
 timesteps, and task embeddings, the model adopts a multimodal diffusion transformer architecture.

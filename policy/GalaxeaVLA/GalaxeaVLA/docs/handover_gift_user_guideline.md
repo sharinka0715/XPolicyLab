@@ -26,10 +26,6 @@ Our scene setup is shown below
 
 The front edge of the chassis's front wheels should be aligned with the edge of the table. The table height should be 90cm, which is critical for the robot to operate properly.
 
-<p align="center">
-  <img src="assets/handover_gift/robot_position.png" alt="robot position" width="700"/>
-</p>
-
 To ensure experimental rigor, we have also provided the actual parameters of the gift bag used during testing. However, the model also exhibits a degree of generalizability to other similar bags.
 
 <p align="center">
@@ -90,7 +86,6 @@ cd /home/nvidia/galaxea/install/startup_config/share/startup_config/script/
 ```
 
 2. launch EHI and send command
-<img src="assets/ehi/task_orchestration.gif" alt="EHI Task Orchestration" width="980" height="540" />
 
 ## Test Case
 |Index| User Behavior|Expected Robot Behavior|

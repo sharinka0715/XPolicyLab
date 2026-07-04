@@ -196,8 +196,3 @@ python -m lerobot.async_inference.robot_client \
 1. **Terminal 2:** Displays `Robot Client Connected`, and continuously logs `Sending ... images to VLA`.
 2. **Terminal 3:** Displays `Robot connected and ready`.
 3. **Robot Arm:** Begins to move smoothly following the instructions.
-
-## Demos
-Following the above instructions, we conducted a **Push Button** task on our SO-101 robot, and provide a successful demo video below:
-
-**[📹 View Demo Video: Push Button Task](hardware/so101/demo_press_button.mp4)**

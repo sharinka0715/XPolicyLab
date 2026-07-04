@@ -5,19 +5,6 @@ cd RISE/dynamics/dynamics_model
 # Navigate to the dynamics model directory before running the following commands
 ```
 
-## Generated Samples
-
-
-<p align="center">
-   <img src="../rise_assets/conveyor.gif" alt="Conveyor demo" width="49%" />
-   <img src="../rise_assets/backpack.gif" alt="Backpack demo" width="49%" />
-</p>
-
-
-
-
-
-
 ## Data Format
 
 The framework expects data in the LeRobot format. For optimal training performance, we strongly recommend pre-resizing videos to `[256, 192]` resolution.
