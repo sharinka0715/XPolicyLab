@@ -85,6 +85,12 @@ bash eval.sh <bench_name> <task_name> <ckpt_name> <env_cfg_type> <action_type> <
 
 Use `EVAL_ENV_TYPE=debug` for an offline wiring check. Leave it unset, or set `EVAL_ENV_TYPE=sim`, for RoboDojo simulation.
 
+### Deployment Replay Videos
+
+RoboDojo replay videos are updated when the environment observation API is called during deployment. In single-env deployment, call `TASK_ENV.get_obs()` before sending `update_obs` to the model server and again after each action chunk step that should refresh the observation. In batch deployment, call `TASK_ENV.get_obs_batch(env_idx_list)` before `update_obs_batch` and again for the still-running envs after each chunk step.
+
+When implementing `policy/<POLICY>/deploy.py`, strictly follow `policy/demo_policy/deploy.py`. Missing these `get_obs()` / `get_obs_batch()` calls can make the saved replay videos too short or stale, because the eval client streams video frames from those observation calls.
+
 ## Policies
 
 Top-level policy adapters live in `policy/`. Each top-level policy README contains the paper/repo link, installation notes, data processing, training, deployment, and important parameters.
