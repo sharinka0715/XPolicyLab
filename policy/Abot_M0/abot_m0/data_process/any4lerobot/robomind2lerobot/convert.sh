@@ -4,9 +4,9 @@ export RAY_DEDUP_LOGS=0
 export TMPDIR=/mnt/workspace/yangyandan/my_tmp
 export RAY_TMPDIR=/mnt/workspace/yangyandan/ray_tmp
 export RAY_OBJECT_STORE_MEMORY=4000000000
-export RAY_USE_SHM=false  # 容器环境建议加上
+export RAY_USE_SHM=false  # Translated comment
 
-# Step 3: 创建目录
+# Step 3: createdirectory
 mkdir -p $RAY_TMPDIR
 
 

@@ -1,18 +1,18 @@
 #!/bin/bash
-# 计算合理的 cpus_per_task 值
+# compute cpus_per_task value
 
 echo "=== 系统资源检查 ==="
 echo ""
 
-# 获取 CPU 核心数
+# get CPU
 TOTAL_CPUS=$(nproc)
 echo "总 CPU 核心数: $TOTAL_CPUS"
 
-# 获取总内存（GB）
+# get(GB)
 TOTAL_MEM_GB=$(free -g | awk '/^Mem:/{print $2}')
 echo "总内存: ${TOTAL_MEM_GB}GB"
 
-# 安全内存使用量（留 20% 余量）
+# use( 20% )
 SAFE_MEM_GB=$((TOTAL_MEM_GB * 80 / 100))
 echo "安全可用内存（80%阈值）: ${SAFE_MEM_GB}GB"
 echo ""
@@ -21,7 +21,7 @@ echo "=== 不同 cpus_per_task 配置分析 ==="
 echo "（假设每个任务需要 20GB 内存）"
 echo ""
 
-MEM_PER_TASK=20  # 每个任务需要的内存（GB）
+MEM_PER_TASK=20  # task (GB)
 
 for CPUS_PER_TASK in 3 6 9 12 15 18 21 24; do
     MAX_PARALLEL=$((TOTAL_CPUS / CPUS_PER_TASK))

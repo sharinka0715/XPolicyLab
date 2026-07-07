@@ -33,12 +33,12 @@ class PreprocessDepth:
         orig_h, orig_w = img.shape
         target_h, target_w = target_size
 
-        # 计算缩放比例
+        # compute
         scale = min(target_h / orig_h, target_w / orig_w)
         new_h = int(round(orig_h * scale))
         new_w = int(round(orig_w * scale))
 
-        # resize（保持数据类型）
+        # resize(data)
         img = img.unsqueeze(0).unsqueeze(0).float()  # shape (1,1,H,W)
         img = F.interpolate(
             img,
@@ -49,7 +49,7 @@ class PreprocessDepth:
             align_corners=False)
         img = img.squeeze(0).squeeze(0).to(torch.int)  # back to int tensor
 
-        # 计算padding大小
+        # computepaddingsize
         pad_h = target_h - new_h
         pad_w = target_w - new_w
         pad_top = pad_h // 2

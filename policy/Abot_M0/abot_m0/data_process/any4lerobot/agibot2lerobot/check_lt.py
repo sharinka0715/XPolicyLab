@@ -420,7 +420,7 @@ def save_as_lerobot_dataset(
                 dataset.add_frame(frame_data)
 
             try:
-                # ✅只静音这一段（ffmpeg/libav 输出）
+                # ✅Silence only this section: ffmpeg/libav output
                 with suppress_fds(True):
                     dataset.save_episode(videos=videos, action_config=action_config)
                 saved_ok += 1
@@ -642,7 +642,7 @@ if __name__ == "__main__":
     parser.add_argument("--save-depth", action="store_true")
     parser.add_argument("--debug", action="store_true")
 
-    # ✅双臂拉平成一维（按 shape 第0维=2）
+    # ✅Flatten dual-arm data to one dimension, assuming shape dimension 0 is 2
     parser.add_argument("--flatten-bimanual", action="store_true")
 
     # strict integrity by default; set this to be best-effort

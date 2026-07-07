@@ -119,7 +119,7 @@ class RoboChallengeDatasetReader(Dataset):
 
         self.target_embodiment = embodiment.upper()
 
-        # 归一化配置：从指定 stats JSON 中读取，格式与 compute_stats() / lerobot 保持一致
+        # config: from stats JSON inread, and compute_stats() / lerobot
         self.normalization_type: Optional[NormalizationType] = normalization_type
         self._norm_stats: Optional[Dict[str, Dict[str, List[float]]]] = None
 
@@ -128,12 +128,12 @@ class RoboChallengeDatasetReader(Dataset):
                 stats_path = Path(norm_stats_path)
                 with stats_path.open("r", encoding="utf-8") as f:
                     stats_json = json.load(f)
-                # 兼容 compute_stats() 的输出结构
+                # support compute_stats()
                 if "embodiments" in stats_json:
                     emb_stats = stats_json["embodiments"][self.target_embodiment]["stats"]
                 else:
                     emb_stats = stats_json
-                # 只保留 action/state 两个 key，结构与 lerobot 的 metadata[key] 对齐
+                # onlykeep action/state key, and lerobot metadata[key] for
                 self._norm_stats = {
                     "actions": emb_stats["actions"],
                     "state": emb_stats["state"],
@@ -329,7 +329,7 @@ class RoboChallengeDatasetReader(Dataset):
             return data
 
         if self.normalization_type == NormalizationType.NORMAL:
-            # mask 直接用全 1，与 lerobot 当前实现一致
+            # mask use 1, and lerobot current
             mean = np.array(meta["mean"], dtype=np.float32)
             std = np.array(meta["std"], dtype=np.float32)
             mask = np.ones_like(mean, dtype=bool)
@@ -350,7 +350,7 @@ class RoboChallengeDatasetReader(Dataset):
                 data,
             )
 
-            # 与 lerobot 一致：未使用的维度（min == max）直接置 0
+            # and lerobot : use dimension(min == max) 0
             if "min" in meta and "max" in meta:
                 zeros_mask = np.array(meta["min"], dtype=np.float32) == np.array(meta["max"], dtype=np.float32)
                 normalized = np.where(zeros_mask, 0.0, normalized)
@@ -588,7 +588,7 @@ class RoboChallengeDatasetReader(Dataset):
         elif frame_action.shape[0] == 0:
             frame_action = np.zeros((self.chunk_size, states_14.shape[1]), dtype=np.float32)
 
-        # 使用与 lerobot 相同风格的归一化；未配置时退回到原始裁剪逻辑
+        # useand lerobot ; configto
         frame_state[frame_state > 4] = 4
         frame_action[frame_action > 4] = 4
         if self.normalization_type is not None and self._norm_stats is not None:
@@ -727,7 +727,7 @@ def export_trajectory_video(ds,
     import cv2
     import numpy as np
     import matplotlib
-    matplotlib.use('Agg')  # 使用非交互后端，加速渲染
+    matplotlib.use('Agg')  # useafter,
     import matplotlib.pyplot as plt
     from matplotlib import gridspec
     from math import ceil
@@ -735,7 +735,7 @@ def export_trajectory_video(ds,
     assert end_index > start_index, "end_index 需大于 start_index"
     num_frames = end_index - start_index
 
-    # 辅助函数：提取图像
+    # : extractImage
     def extract_images(item):
         imgs = []
         if 'images' in item and isinstance(item['images'], (list, tuple)) and len(item['images']) > 0:
@@ -762,7 +762,7 @@ def export_trajectory_video(ds,
                     imgs.append(arr if arr.shape[2] == 3 else np.repeat(arr, 3, axis=2))
         return imgs
 
-    # 辅助函数：提取动作向量
+    # : extractactionvector
     def extract_action_vec(item):
         act = item.get('action', None)
         if act is None:
@@ -776,7 +776,7 @@ def export_trajectory_video(ds,
             return act_np
         return None
 
-    # 辅助函数：拼接图像
+    # : Image
     def concat_images(imgs):
         if len(imgs) == 0:
             return None
@@ -794,16 +794,16 @@ def export_trajectory_video(ds,
 
     logging.info(f'开始预加载 {num_frames} 帧数据...')
     
-    # ========== 一次性预加载所有数据 ==========
+    # ========== loadalldata ==========
     all_images = []
     all_actions = []
     for offset in tqdm(range(0, num_frames, frame_interval), desc="预加载数据"):
         item = ds[start_index + offset]
-        # 提取并拼接图像
+        # extractImage
         imgs = extract_images(item)
         concat_img = concat_images(imgs)
         all_images.append(concat_img)
-        # 提取动作
+        # extractaction
         vec = extract_action_vec(item)
         all_actions.append(vec)
     
@@ -811,11 +811,11 @@ def export_trajectory_video(ds,
         raise ValueError("未从数据集中解析到图像通道。请确认数据项包含 'images' 或图像键。")
     logging.info('预加载数据完成')
 
-    # 确定动作维度
+    # actiondimension
     first_act_vec = next((v for v in all_actions if v is not None), None)
     action_dims = 0 if first_act_vec is None else min(max_action_dims, int(first_act_vec.shape[0]))
     
-    # 构建动作数组
+    # action
     actions_all = None
     if action_dims > 0:
         series = []
@@ -833,7 +833,7 @@ def export_trajectory_video(ds,
         actions_all = np.stack(series, axis=0)
     logging.info('构建动作数组完成')
 
-    # ========== 创建画布（只创建一次） ==========
+    # ========== create(onlycreate) ==========
     draw_num_frames = len(all_images)
     if action_dims > 0:
         action_cols = 4
@@ -854,14 +854,14 @@ def export_trajectory_video(ds,
             c = d % action_cols
             ax_action_list.append(fig.add_subplot(gs[r, c]))
 
-    # 初始化图像显示（使用 set_data 更新，避免每帧 clear）
+    # Image(use set_data update, avoidframe clear)
     first_valid_img = next((img for img in all_images if img is not None), None)
     if first_valid_img is None:
         raise ValueError("没有有效图像")
     img_artist = ax_img.imshow(first_valid_img)
     ax_img.axis('off')
 
-    # 初始化动作曲线和当前点
+    # actionandcurrent
     point_artists = []
     if action_dims > 0 and actions_all is not None:
         for d in range(action_dims):
@@ -879,7 +879,7 @@ def export_trajectory_video(ds,
                 ymax += 1.0
             ax.set_ylim(ymin, ymax)
             ax.set_title(f'action dim {d}')
-            # 预创建点对象（初始不可见）
+            # createfor()
             point, = ax.plot([], [], marker='o', markersize=7, color='C3', linewidth=0)
             point_artists.append(point)
 
@@ -887,21 +887,21 @@ def export_trajectory_video(ds,
     fig.canvas.draw()
     logging.info('创建画布完成')
 
-    # 获取画布尺寸并创建视频写入器
+    # getcreatevideowrite
     w, h = fig.canvas.get_width_height()
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (w, h))
     logging.info('开始写入视频帧...')
 
-    # ========== 渲染循环（使用 set_data 更新，避免重绘） ==========
+    # ========== (use set_data update, avoid) ==========
     
     for offset in tqdm(range(0, draw_num_frames, frame_interval), desc="渲染视频"):
         concat_img = all_images[offset]
         if concat_img is None:
             continue
         
-        # 更新图像（使用 set_data 而非 clear + imshow）
-        # 如果图像尺寸变化，需要重新设置
+        # updateImage(use set_data clear + imshow)
+        # ifImage, set
         if concat_img.shape[:2] != (img_artist.get_array().shape[0], img_artist.get_array().shape[1]):
             ax_img.clear()
             img_artist = ax_img.imshow(concat_img)
@@ -909,7 +909,7 @@ def export_trajectory_video(ds,
         else:
             img_artist.set_data(concat_img)
         
-        # 更新当前帧的点（使用 set_data 而非 remove + plot）
+        # updatecurrentframe (use set_data remove + plot)
         if action_dims > 0 and actions_all is not None:
             for d in range(action_dims):
                 if np.isfinite(actions_all[offset, d]):
@@ -917,12 +917,12 @@ def export_trajectory_video(ds,
                 else:
                     point_artists[d].set_data([], [])
 
-        # 只重绘变化的部分
+        # only
         ax_img.draw_artist(img_artist)
         for pa in point_artists:
             pa.axes.draw_artist(pa)
         
-        # 抓帧
+        # frame
         fig.canvas.draw()
         buf = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
         frame = buf.reshape((h, w, 4))
@@ -940,7 +940,7 @@ def _export_single_trajectory(args):
      episode_idx, out_path, fps, max_action_dims, video_frame_interval) = args
     
     try:
-        # 每个进程创建独立的 reader 实例
+        # processcreate reader
         reader = RoboChallengeDatasetReader(
             dataset_path=dataset_path,
             control_type=control_type,
@@ -995,14 +995,14 @@ def visualize_dataset(reader, frame_interval=2, episode_indices=None, num_worker
     import multiprocessing as mp
     from pathlib import Path
     
-    # 确保输出目录存在
+    # Ensure the output directory exists
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     
-    # 默认 episode 索引
+    # default episode index
     if episode_indices is None:
         episode_indices = [423]
     
-    # 构建参数列表
+    # parametercolumn
     tasks = []
     for ep_idx in episode_indices:
         out_path = f'{output_dir}/{reader._tasks[0]["task_name"]}_ep{ep_idx}.mp4'
@@ -1029,18 +1029,18 @@ def visualize_dataset(reader, frame_interval=2, episode_indices=None, num_worker
     start_time = time.time()
     
     if num_workers <= 1 or len(tasks) == 1:
-        # 单进程模式
+        # processmode
         results = [_export_single_trajectory(task) for task in tasks]
     else:
-        # 多进程并行
-        # 使用 spawn 方法以避免 fork 在某些情况下的问题
+        # processrow
+        # use spawn methodavoid fork inunder
         ctx = mp.get_context('spawn')
         with ctx.Pool(processes=min(num_workers, len(tasks))) as pool:
             results = pool.map(_export_single_trajectory, tasks)
     
     end_time = time.time()
     
-    # 统计结果
+    # statistics
     success_count = sum(1 for r in results if r is not None)
     print(f"\n完成！成功生成 {success_count}/{len(tasks)} 个视频")
     print(f"总耗时: {end_time - start_time:.2f} 秒")
@@ -1119,7 +1119,7 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="Print progress information")
     parser.add_argument("--state_cache_size", type=int, default=64, help="Number of episodes to keep cached for states (0 to disable)")
     parser.add_argument("--only_save_overall_stats", action="store_true", help="Only save overall stats (stats mode)")
-    # 新增并行视频生成参数
+    # rowvideogenerateparameter
     parser.add_argument("--episode_indices", type=int, nargs="+", default=None, 
                         help="Episode indices to visualize (visualize mode). Default: [423]")
     parser.add_argument("--random_episodes", type=int, default=None,
@@ -1151,7 +1151,7 @@ def main():
     )
 
     if args.mode == "visualize":
-        # 确定 episode indices
+        # episode indices
         episode_indices = args.episode_indices
         if args.random_episodes is not None:
             total_episodes = len(reader._episodes)

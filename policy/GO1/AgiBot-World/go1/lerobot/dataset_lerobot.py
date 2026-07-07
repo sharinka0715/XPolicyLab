@@ -20,7 +20,7 @@ def tensor_to_pil(tensor):
         else:
             tensor = tensor.clamp(0, 255).to(torch.uint8)
 
-    # 转换为numpy并创建PIL图像
+    # Convert tonumpycreatePILImage
     numpy_img = tensor.cpu().numpy()
     return Image.fromarray(numpy_img)
 

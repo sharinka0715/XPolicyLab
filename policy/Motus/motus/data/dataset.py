@@ -306,7 +306,7 @@ def collate_fn(batch: List[Optional[Dict[str, Any]]]) -> Optional[Dict[str, Any]
     if len(batch) == 0:
         return None
     
-    # Stack tensors（支持无 initial_state 的样本）
+    # Stack tensors(supports samples without initial_state)
     first_frames = torch.stack([sample['first_frame'] for sample in batch])
     video_frames = torch.stack([sample['video_frames'] for sample in batch])
     action_sequences = torch.stack([sample['action_sequence'] for sample in batch])

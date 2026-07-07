@@ -9,26 +9,26 @@ def batched_R_to_rpy(R: np.ndarray) -> np.ndarray:
     r20 = np.clip(R[:, 2, 0], -1.0, 1.0)
     pitch = np.arcsin(-r20)
 
-    # 判断奇异值（万向节锁）
+    # Detect singularities (gimbal lock)
     cos_pitch = np.cos(pitch)
     singular = np.abs(cos_pitch) < 1e-6   # True: pitch ≈ ±90°
 
     roll = np.zeros_like(pitch)
     yaw  = np.zeros_like(pitch)
 
-    # ---- 非奇异情况 ----
+    # ---- Non-singular case ----
     idx = ~singular
     if np.any(idx):
         roll[idx] = np.arctan2(R[idx, 2, 1], R[idx, 2, 2])
         yaw[idx]  = np.arctan2(R[idx, 1, 0], R[idx, 0, 0])
 
-    # ---- 奇异情况 (pitch = +90° 或 -90°) ----
+    # ---- Singular case (pitch = +90° or -90°) ----
     # roll = atan2(-R[0,1], R[1,1])
-    # yaw is set to zero (不可区分)
+    # yaw is set to zero (indistinguishable)
     idx = singular
     if np.any(idx):
         roll[idx] = np.arctan2(-R[idx, 0, 1], R[idx, 1, 1])
-        yaw[idx]  = 0.0   # 常用处理方法：设置 yaw = 0
+        yaw[idx]  = 0.0   # Common handling: set yaw = 0
 
     return np.stack([roll, pitch, yaw], axis=1).astype(np.float64)
 
@@ -75,21 +75,21 @@ def calculate_delta_eef(eef_position: np.ndarray) -> np.ndarray:
     if N < 2:
         return np.zeros((0, 6))
 
-    # Step 1: 构建所有 4x4 pose 矩阵 T_i
+    # Step 1: Build all 4x4 pose matrices T_i
     eef_matrix = np.tile(np.eye(4), (N, 1, 1))  # (N, 4, 4)
     eef_matrix[:, :3, :3] = batched_rpy_to_R(eef_position[:, 3:6])
     eef_matrix[:, :3, 3] = eef_position[:, :3]
 
-    # Step 2: 计算 T_{0->i} = T_0^{-1} @ T_i
+    # Step 2: compute T_{0->i} = T_0^{-1} @ T_i
     T0_inv = invert_homogeneous_batch(eef_matrix[0:1])  # (1, 4, 4)
     T_0_to_i = T0_inv @ eef_matrix  # (1,4,4) @ (N,4,4) -> (N,4,4)
 
-    # Step 3: 计算相邻帧在对齐后坐标系下的相对变换
+    # Step 3: Compute relative transforms between adjacent frames in the aligned coordinate system
     # ΔT_i = T_{0->i}^{-1} @ T_{0->i+1}
     T_0_to_i_inv = invert_homogeneous_batch(T_0_to_i[:-1])  # (N-1, 4, 4)
     delta_T = T_0_to_i_inv @ T_0_to_i[1:]                  # (N-1, 4, 4)
 
-    # Step 4: 提取欧拉角和平移
+    # Step 4: Extract Euler angles and translation
     delta_R = delta_T[:, :3, :3]       # (N-1, 3, 3)
     delta_t = delta_T[:, :3, 3]        # (N-1, 3)
     delta_euler = batched_R_to_rpy(delta_R)  # (N-1, 3)
@@ -116,25 +116,25 @@ def delta2abs(delta_eef: np.ndarray, initial_eef: np.ndarray) -> np.ndarray:
     N_minus_1 = len(delta_eef)
     N = N_minus_1 + 1
 
-    # Step 1: 构造初始位姿 T0 (4x4)
+    # Step 1: Construct the initial pose T0 (4x4)
     T0 = np.eye(4)
     T0[:3, :3] = batched_rpy_to_R(initial_eef[None, 3:6])[0]
     T0[:3, 3] = initial_eef[:3]
 
-    # Step 2: 构造 delta_T 数组 (N-1, 4, 4)
+    # Step 2: Construct the delta_T array (N-1, 4, 4)
     delta_T = np.tile(np.eye(4), (N_minus_1, 1, 1))
     delta_T[:, :3, :3] = batched_rpy_to_R(delta_eef[:, 3:6])
     delta_T[:, :3, 3] = delta_eef[:, :3]
 
-    # Step 3: 累积得到 T_0_to_i: T_0_to_0 = I, T_0_to_1 = ΔT0, T_0_to_2 = ΔT0 @ ΔT1, ...
+    # Step 3: Accumulate to obtain T_0_to_i: T_0_to_0 = I, T_0_to_1 = ΔT0, T_0_to_2 = ΔT0 @ ΔT1,...
     T_0_to_i = np.tile(np.eye(4), (N, 1, 1))  # (N, 4, 4)
     for i in range(1, N):
         T_0_to_i[i] = T_0_to_i[i - 1] @ delta_T[i - 1]
 
-    # Step 4: 转换回全局坐标系: T_i = T0 @ T_0_to_i
+    # Step 4: Convert back to the global coordinate system: T_i = T0 @ T_0_to_i
     T_abs = T0 @ T_0_to_i  # (4,4) @ (N,4,4) -> (N,4,4)
 
-    # Step 5: 提取平移和欧拉角
+    # Step 5: extractand
     trans = T_abs[:, :3, 3]  # (N, 3)
     R_abs = T_abs[:, :3, :3]  # (N, 3, 3)
     euler = batched_R_to_rpy(R_abs)  # (N, 3)

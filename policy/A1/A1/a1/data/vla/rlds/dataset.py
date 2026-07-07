@@ -215,7 +215,7 @@ def make_dataset_from_rlds(
     builder = tfds.builder(name, data_dir=data_dir,try_gcs=False)
     print('214**************',builder)
     # builder.download_and_prepare(download=False)
-    # 检查可用的分割
+    # Check available splits
     available_splits = list(builder.info.splits.keys())
     # print(f"************** Available splits: {available_splits}")
 

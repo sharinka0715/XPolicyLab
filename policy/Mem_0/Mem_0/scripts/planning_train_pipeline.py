@@ -61,9 +61,9 @@ def get_images_folder_name(dataset_name: str) -> str:
 def run_cmd(cmd: list[str], cwd: Path | None = None, env_name: str | None = None) -> None:
     env = None
     if env_name:
-        # --no-capture-output: 不捕获子进程输出，让 train 等步骤的日志实时打印到终端
+        # --no-capture-output: do not capture subprocess output so train and other step logs stream to the terminal
         cmd = ["conda", "run", "--no-capture-output", "-n", env_name] + cmd
-        # 子进程继承 PYTHONUNBUFFERED，避免 Python 缓冲导致日志延迟
+        # Subprocesses inherit PYTHONUNBUFFERED to avoid Python buffering delays in logs
         env = {**os.environ, "PYTHONUNBUFFERED": "1"}
     try:
         subprocess.run(cmd, cwd=cwd, check=True, env=env)
@@ -120,7 +120,7 @@ def step_copy(cfg: dict, dataset_name: str) -> None:
     shutil.copytree(src_images, dst_images)
     print(f"[Step 2] Copied {json_name} and {images_name} to {data_dir}")
 
-    # 更新 dataset_info.json
+    # Update dataset_info.json
     info_path = data_dir / "dataset_info.json"
     if info_path.exists():
         with open(info_path, "r", encoding="utf-8") as f:

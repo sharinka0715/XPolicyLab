@@ -83,7 +83,7 @@ def franka_kitchen2llava_format(data_path:str, ratio:float, view):
                 t['state'] = each['observations'][i].tolist()
                 t['action'] = each['actions'][i].tolist()
                 # print(t['action'])
-                ########################################查看一下数据范围
+                ######################################## Check the data range
                 # for j,a in enumerate(zip(t['action'])):
                 #     if max_action[j] < a:
                 #         max_action[j] = a

@@ -62,7 +62,7 @@ class UWM(baseframework):
         """
         super().__init__()
         self.config = config
-        self.action_model: FlowmatchingActionHead = get_action_model(config=self.config)  # 修复后续引用
+        self.action_model: FlowmatchingActionHead = get_action_model(config=self.config)  # Fix later references
 
         self.future_action_window_size = config.framework.action_model.future_action_window_size
         self.past_action_window_size = config.framework.action_model.past_action_window_size
@@ -89,7 +89,7 @@ class UWM(baseframework):
         # Step 4: Action Expert Forward and Loss
         # with torch.autocast("cuda", dtype=torch.float32):
         with torch.autocast("cuda", dtype=torch.bfloat16):
-            # 标签对齐：取最后 chunk_len 段
+            # Label alignment: take the last chunk_len segments
             actions = torch.from_numpy(np.array(actions)) # [B, T_full, action_dim]
             actions_target = actions[:, -(self.future_action_window_size+1):, :]  # (B, chunk_len, action_dim)
 

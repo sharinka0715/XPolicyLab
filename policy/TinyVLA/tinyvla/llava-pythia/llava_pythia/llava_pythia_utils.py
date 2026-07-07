@@ -235,7 +235,7 @@ def load_llava_pythia(config=None, llava_pythia_config=None, rank0_print=print, 
     else:
         for p in model.get_model().mm_projector.parameters():
             p.requires_grad = True
-    # action head需要训练
+    # The action head needs training
     model.embed_out.requires_grad_(True)
     model.proj_to_action.requires_grad_(True)
 

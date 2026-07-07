@@ -255,7 +255,7 @@ class _TorchAlignFeatureShard:
             image_t = torch.clamp(image_t / 2.0 + 0.5, 0, 1)
 
             padding_mask = torch.as_tensor(np.asarray(observation.image_padding_mask[key]).copy(), device=self.device).bool()
-            image_t = image_t.clone() if not (image == 0).all() else torch.ones_like(image_t)  # TODO：用仅双视角做检查
+            image_t = image_t.clone() if not (image == 0).all() else torch.ones_like(image_t)  # TODO: check using only dual-view inputs
             image_t[~padding_mask] = 1.0
             images.append(image_t.permute(0, 3, 1, 2).contiguous())
             padding_masks[key] = padding_mask

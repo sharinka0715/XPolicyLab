@@ -4,7 +4,7 @@
 
 
 # def print_tree(name, obj):
-#     """打印树状结构"""
+# """Print the tree structure"""
 #     indent = "  " * (name.count("/") - 1)
 #     if isinstance(obj, h5py.Group):
 #         print(f"{indent}📂 {name}/")
@@ -13,7 +13,7 @@
 
 
 # def h5_to_dict(obj):
-#     """递归转换 HDF5 对象为 Python 字典"""
+# """Recursively convert HDF5 objects to a Python dict"""
 #     if isinstance(obj, h5py.Dataset):
 #         data_info = {
 #             "type": "dataset",
@@ -21,11 +21,11 @@
 #             "dtype": str(obj.dtype),
 #         }
 #         try:
-#             # 小数据集直接保存
+# # Save small datasets directly
 #             if obj.size <= 100:
 #                 data_info["data"] = obj[()].tolist()
 #             else:
-#                 # 保存前10个元素/样本作为预览
+# # Save the first 10 elements/samples as a preview
 #                 if obj.ndim > 0:
 #                     data_info["preview"] = obj[0 : min(10, obj.shape[0])].tolist()
 #                 else:
@@ -47,20 +47,20 @@
 
 # def read_h5_to_json(h5_path, json_path="output.json"):
 #     with h5py.File(h5_path, "r") as f:
-#         print(f"\n=== HDF5 文件树状结构: {h5_path} ===\n")
+# print(f"\n=== HDF5 file tree structure: {h5_path} ===\n")
 #         f.visititems(print_tree)
 
-#         print("\n=== 正在导出为 JSON... ===")
+# print("\n=== Exporting to JSON... ===")
 #         structure = {"/": h5_to_dict(f)}
 
 #     with open(json_path, "w", encoding="utf-8") as f:
 #         json.dump(structure, f, ensure_ascii=False, indent=2)
 
-#     print(f"\n✅ 已将内容写入 {json_path}")
+# print(f"\n✅ Wrote content to {json_path}")
 
 
 # if __name__ == "__main__":
-#     # 修改为你的 HDF5 文件路径
+# # Change this to your HDF5 file path
 #     h5_file = "/mnt/data2/datasets/Real-robot/AgibotWorld-Alpha/Actiondata/proprio_stats/327/648642/proprio_stats.h5"
 #     json_file = "output.json"
 #     read_h5_to_json(h5_file, json_file)
@@ -94,7 +94,7 @@ class RobotDatasetReader:
         self.proprio_dir = os.path.join(root_dir, "Actiondata/proprio_stats")
         self.task_info_dir = os.path.join(root_dir, "task_info")
 
-        # 缓存 task_info
+        # Cache task_info
         self.task_info = self._load_task_info()
 
     def _load_task_info(self) -> Dict[str, Any]:
@@ -158,7 +158,7 @@ class RobotDatasetReader:
             if "state" not in f:
                 raise ValueError(f"文件中没有 state 数据: {h5_path}")
 
-            # 遍历 state 下的所有 group
+            # Iterate over all groups under state
             for module_name in f["state"].keys():
                 module_group = f["state"][module_name]
                 module_data = {}
@@ -171,7 +171,7 @@ class RobotDatasetReader:
                 if module_data:
                     state_data[module_name] = module_data
 
-            # timestamp 单独处理
+            # timestamp Handle separately
             if "timestamp" in f and frame_idx < len(f["timestamp"]):
                 state_data["timestamp"] = f["timestamp"][frame_idx]
         return state_data
@@ -190,20 +190,20 @@ class RobotDatasetReader:
             return None
 
         try:
-            # 使用 imageio + ffmpeg 读取视频帧
+            # Read video frames with imageio + ffmpeg
             import time
             st = time.time()
             reader = imageio.get_reader(video_path, format="ffmpeg")
             
             # total_frames = reader.count_frames()
-            # print(f"读取视频帧成功: {video_path}, frame_idx={frame_idx}, 时间: {time.time() - st}")
+            # print(f"Successfully read video frame: {video_path}, frame_idx={frame_idx}, time: {time.time() - st}")
             # if frame_idx >= total_frames:
             #     reader.close()
             #     return None
             
             frame = reader.get_data(frame_idx)
             reader.close()
-            if frame.shape[2] == 4:  # 如果有 alpha 通道
+            if frame.shape[2] == 4:  # If there is an alpha channel
                 frame = frame[:, :, :3]
             return np.asarray(frame)
 
@@ -321,7 +321,7 @@ class RobotDatasetReader:
             "init_scene_text": ep_info["init_scene_text"] if ep_info else None,
             'current_action': current_action['action_text'],
             "action": actions,
-            "state": state,  # ✅ 现在包含 joint/robot/effector/head 等完整 state
+            "state": state,  # ✅ Now includes full state such as joint/robot/effector/head
             "image": imgs,
         }
 
@@ -386,23 +386,23 @@ def quaternion_to_rpy(q, order: str = "xyzw", degrees: bool = False):
     else:
         raise ValueError("order 仅支持 'wxyz' 或 'xyzw'")
 
-    # 归一化，避免数值漂移
+    # Normalize to avoid numerical drift
     norm = np.sqrt(w*w + x*x + y*y + z*z)
     if norm == 0:
         raise ValueError("四元数范数为0")
     w, x, y, z = w / norm, x / norm, y / norm, z / norm
 
-    # roll (x轴旋转)
+    # roll (xaxis rotation)
     t0 = 2.0 * (w * x + y * z)
     t1 = 1.0 - 2.0 * (x * x + y * y)
     roll = np.arctan2(t0, t1)
 
-    # pitch (y轴旋转)
+    # pitch (yaxis rotation)
     t2 = 2.0 * (w * y - z * x)
     t2 = np.clip(t2, -1.0, 1.0)
     pitch = np.arcsin(t2)
 
-    # yaw (z轴旋转)
+    # yaw (zaxis rotation)
     t3 = 2.0 * (w * z + x * y)
     t4 = 1.0 - 2.0 * (y * y + z * z)
     yaw = np.arctan2(t3, t4)
@@ -421,7 +421,7 @@ def read_filtered_frame_ranges(xlsx_path: str, num_actions_chunk: int= 8) -> Lis
         raise FileNotFoundError(f"未找到文件: {xlsx_path}")
 
     df = pd.read_excel(xlsx_path)
-    # 规范列名
+    # Normalize column names
     expected_cols = ["set_id", "episode_id", "start_frame", "end_frame"]
     missing_cols = [c for c in expected_cols if c not in df.columns]
     if missing_cols:
@@ -456,7 +456,7 @@ if __name__ == "__main__":
     # print(quaternion_to_rpy([ 0.52416398, -0.22196564,  0.79680929,  0.20267791]))
     dataset = RobotDatasetReader("/mnt/data2/datasets/Real-robot/AgibotWorld-Alpha", "a1/data/vla/agibot/agibot_alpha_frame_ranges.xlsx","a1/data/vla/agibot/norm_stats.json",1)
     # print(len(dataset))
-    # # 示例：从 Excel 读取帧区间并遍历前几条
+    # # Example:Read frame ranges from Excel and iterate over the first few entries
     
     try:
         states = []
@@ -470,10 +470,10 @@ if __name__ == "__main__":
         #         states.append(frame["state"])
         #     # if i > 1000:
         #     #     break
-        # # 拼接成一个数组
+        # # Concatenate into one array
         # states = np.stack(states, axis=0)
         # actions = states
-        # # 统计mean,std,max,min,q01,q99并写入norm_stats.json
+        # # Compute mean, std, max, min, q01, and q99 and write them to norm_stats.json
         # norm_stats = {
         #     "states": {
         #         "mean": states.mean(0).tolist(),
@@ -497,7 +497,7 @@ if __name__ == "__main__":
         # print(states.shape)
         # print(actions.shape)
     except Exception as e:
-        # 打印完整错误信息
+        # Print full error information
         import traceback
         print(f"完整错误信息: {traceback.format_exc()}")
         print(f"读取或迭代失败: {e}")

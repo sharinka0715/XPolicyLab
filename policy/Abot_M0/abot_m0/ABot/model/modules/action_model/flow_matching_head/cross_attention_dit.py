@@ -220,9 +220,9 @@ class DiT(ModelMixin, ConfigMixin):
         self.gradient_checkpointing = False
 
         # Timestep encoder
-        #  self.config.compute_dtype 可能不存在，要提前处理
+        # self.config.compute_dtype may not exist, so handle it in advance
         compute_dtype = getattr(self.config, 'compute_dtype', torch.float32)
-        self.timestep_encoder = TimestepEncoder( # TODO BUG, train 的时候 self.config.compute_dtype 不会报错， 但是 eval 的时候会
+        self.timestep_encoder = TimestepEncoder( # TODO BUG: self.config.compute_dtype does not error during training, but does during eval
             embedding_dim=self.inner_dim, compute_dtype=compute_dtype
         )
 

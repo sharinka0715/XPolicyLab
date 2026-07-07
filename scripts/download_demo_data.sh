@@ -140,7 +140,7 @@ src_data="${extract_root}/tmp/data"
 mkdir -p "${DATA_ROOT}"
 rm -rf "${TARGET_DATA_DIR}"
 
-# 压缩包内常为 tmp/data/RoboDojo/...，统一安装到 data/RoboDojo_demo/，避免与完整 RoboDojo 数据集冲突
+# Archives often contain tmp/data/RoboDojo/...; install uniformly to data/RoboDojo_demo/ to avoid conflicts with the full RoboDojo dataset
 if [[ -d "${src_data}/${DATASET_NAME}" ]]; then
 	mv "${src_data}/${DATASET_NAME}" "${TARGET_DATA_DIR}"
 elif [[ -d "${src_data}/RoboDojo" ]]; then

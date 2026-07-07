@@ -61,7 +61,7 @@ deepspeed --master_port 29600 --num_gpus=8 --num_nodes=1 ./train_tinyvla.py \
   --logging_dir $OUTPUT/log
 
 for dir in "$OUTPUT"/*/ ; do
-    # 检查文件夹名称是否包含'checkpoint'
+    # checkfoldername'checkpoint'
     if [[ "$(basename "$dir")" == *"checkpoint"* ]]; then
         cp llava-pythia/preprocessor_config.json $dir
     fi

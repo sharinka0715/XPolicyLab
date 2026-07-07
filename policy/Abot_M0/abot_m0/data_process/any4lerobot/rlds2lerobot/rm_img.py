@@ -11,9 +11,9 @@ FIELDS_TO_DROP = [
     "observation.images.cam_high",
     "observation.images.cam_low",
 ]
-# 是否覆盖已存在的 data1
+# in data1
 OVERWRITE_OUT_DIR = False
-# 是否同步更新 meta/info.json 里的 features 与 data_path（避免加载器仍指向旧字段/旧data目录）
+# synchronizeupdate meta/info.json features and data_path(avoidload/datadirectory)
 UPDATE_META_INFO = False
 def drop_fields_and_save(lerobot_root: Path) -> None:
     data_dir = lerobot_root / "data_save"
@@ -25,7 +25,7 @@ def drop_fields_and_save(lerobot_root: Path) -> None:
         raise RuntimeError(f"在 {data_dir} 下没有找到 parquet 文件")
     if out_dir.exists():
         if not OVERWRITE_OUT_DIR:
-            # 只要里面已有 parquet 就直接拒绝，避免误覆盖
+            # only parquet , avoid
             if any(out_dir.rglob("*.parquet")):
                 raise RuntimeError(f"{out_dir} 已存在且包含 parquet，请先手动处理或将 OVERWRITE_OUT_DIR=True")
         else:
@@ -37,11 +37,11 @@ def drop_fields_and_save(lerobot_root: Path) -> None:
         out_path = out_dir / rel
         out_path.parent.mkdir(parents=True, exist_ok=True)
         pf = pq.ParquetFile(in_path)
-        # Parquet 物理 schema（pf.schema）会把 fixed_size_list 拆成子列，名字常是 element；
-        # 逻辑列名用 Arrow schema：observation.state / action 等顶层字段。
+        # Parquet schema(pf.schema) fixed_size_list column, element;
+        # columnuse Arrow schema: observation.state / action .
         col_names = list(pf.schema_arrow.names)
         keep_cols = [c for c in col_names if c not in drop_set]
-        # 如果原文件里没这些字段，就仍然原样拷贝（只是不读取被drop的列）
+        # iffile, (onlyreaddrop column)
         table = pf.read(columns=keep_cols) if keep_cols != col_names else pf.read()
         pq.write_table(table, out_path)
     if UPDATE_META_INFO:

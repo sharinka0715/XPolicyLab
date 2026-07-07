@@ -1,6 +1,6 @@
-# RoboTwin 3.0 / RoboDojo 数据集配置（ARX5 双臂，关节空间 delta）
-# 动作 14 维: [左臂6 | 左爪1 | 右臂6 | 右爪1]
-# delta_mask=[6,-1,6,-1]: 双臂关节做 delta，夹爪保留绝对值
+# RoboTwin 3.0 / RoboDojo dataset config (ARX5 dual-arm, joint-space delta)
+# 14-D action: [left arm 6 | left gripper 1 | right arm 6 | right gripper 1]
+# delta_mask=[6,-1,6,-1]: use delta for both arm joints and absolute values for grippers
 
 image_augmentation:
   enable: false

@@ -129,7 +129,7 @@ class NormalizationType(str, Enum):
 #     "ACTION_PROPRIO_NORMALIZATION_TYPE": NormalizationType.BOUNDS_Q99,
 # }
 
-# # 这种方式不好，不明确容易出错
+# # ,
 # # Function to detect robot platform from command line arguments
 # def detect_robot_platform():
 #     cmd_args = " ".join(sys.argv).lower()

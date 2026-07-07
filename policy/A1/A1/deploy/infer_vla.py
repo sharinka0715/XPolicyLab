@@ -279,20 +279,20 @@ def run_inference(model: Molmo,
         if not no_norm:
             proprio_norm_stats = norm_stats["state"] ## 
             proprio = normalize_proprio(proprio, proprio_norm_stats, normalization_type)
-        proprio = torch.tensor(proprio, dtype=torch.float32).to(device).unsqueeze(0)  # 添加batch维度
-        proprio = proprio.unsqueeze(1)  # 添加时间步维度，变为 (batch_size, 1, proprio_dim)
-        proprio = proprio.cpu().numpy()  # 转换为numpy数组
+        proprio = torch.tensor(proprio, dtype=torch.float32).to(device).unsqueeze(0)  # addbatchdimension
+        proprio = proprio.unsqueeze(1)  # addtimedimension, as (batch_size, 1, proprio_dim)
+        proprio = proprio.cpu().numpy()  # Convert tonumpy
         
 
-        # 使用与训练时相同的预处理器
+        # useand process
         preprocessor = build_mm_preprocessor(
             model_config=model.config,
-            # for_inference=True,  # 设置为推理模式
+            # for_inference=True, # setasmode
             shuffle_messages=False,
             # is_training=False,
-            is_training=True,  # 这里设置为True是因为我们需要使用训练时的预处理方式
+            is_training=True,  # setasTrueasuse process
         )
-        # 构建输入数据 - 模拟训练时的数据格式
+        # Inputdata - Data format
         action_len = proprio.shape[-1]
         proprio = np.pad(proprio, ((0, 0), (0, 0), (0, model.config.fixed_action_dim - proprio.shape[-1])), mode='constant')
         dummy_action = np.zeros((model.config.num_actions_chunk, model.config.fixed_action_dim), dtype=np.float32)  # dummy action for inference
@@ -303,7 +303,7 @@ def run_inference(model: Molmo,
             "proprio": proprio,  
             "action": dummy_action,
             "action_pad_mask": action_pad_mask,
-            "answer": "Action",  # 不起作用
+            "answer": "Action",  # use
             "style": "action",
             "metadata": {},
             
@@ -315,10 +315,10 @@ def run_inference(model: Molmo,
         else:
             input_data_model["image"] = images[0]
 
-       # 通过预处理器处理
+       # processprocess
         processed_input = preprocessor(input_data_model)
         
-        # 创建collator进行批处理
+        # createcollatorrowprocess
         collator = MMCollatorForAction(
                 model_config=model.config,
                 use_proprio=use_proprio,
@@ -326,15 +326,15 @@ def run_inference(model: Molmo,
                 include_metadata=False,
             pad="to_max", max_crops=model.config.get_max_crops()
         )
-        # 批处理数据
+        # processdata
         batch_data = collator([processed_input])
         
-        # 移动到设备
+        # to
         for key in batch_data:
             if isinstance(batch_data[key], torch.Tensor):
                 batch_data[key] = batch_data[key].to(device)
 
-        # 准备模型输入
+        # modelInput
         model_inputs = {
             "input_ids": batch_data["input_ids"],
             "images": batch_data.get("images"),
@@ -351,7 +351,7 @@ def run_inference(model: Molmo,
 
         normalized_actions  = model.predict_actions(**model_inputs)
         
-        normalized_actions = normalized_actions.to(torch.float32)  # 确保是float32格式
+        normalized_actions = normalized_actions.to(torch.float32)  # ensurefloat32
         normalized_actions = normalized_actions.cpu().numpy()
         normalized_actions = normalized_actions[..., :action_len]
         if not no_norm:

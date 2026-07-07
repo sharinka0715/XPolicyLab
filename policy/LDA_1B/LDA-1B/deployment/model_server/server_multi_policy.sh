@@ -1,4 +1,4 @@
-# 在服务器上运行
+# inservicerun
 NUM_GPUS=4
 BASE_PORT=7777
 CKPT_PATH="/path/to/ckpt/path"

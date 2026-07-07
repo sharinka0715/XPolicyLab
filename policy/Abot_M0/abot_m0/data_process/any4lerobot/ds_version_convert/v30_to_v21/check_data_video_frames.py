@@ -36,7 +36,7 @@ def count_data_frames(dataset_path: Path, episode_index: int) -> int:
     info = load_info(dataset_path)
     data_path_template = info.get("data_path", "data/chunk-{episode_chunk:03d}/episode_{episode_index:06d}.parquet")
     
-    # 计算 episode 所在的 chunk
+    # compute episode in chunk
     chunk_size = info.get("chunks_size", 1000)
     episode_chunk = episode_index // chunk_size
     
@@ -46,7 +46,7 @@ def count_data_frames(dataset_path: Path, episode_index: int) -> int:
     )
     
     if not data_path.exists():
-        return -1  # 文件不存在
+        return -1  # filein
     
     try:
         if HAS_PYARROW:
@@ -68,7 +68,7 @@ def count_video_frames(video_path: Path) -> int:
     try:
         import subprocess
         
-        # 方法1: 使用 ffprobe 获取精确帧数（推荐）
+        # method1: use ffprobe getframe()
         cmd = [
             "ffprobe",
             "-v", "error",
@@ -87,7 +87,7 @@ def count_video_frames(video_path: Path) -> int:
             except ValueError:
                 pass
         
-        # 方法2: 使用 ffprobe 获取 duration 和 fps，然后计算
+        # method2: use ffprobe get duration and fps, aftercompute
         from lerobot.datasets.video_utils import get_video_info
         video_info = get_video_info(video_path)
         fps = video_info.get("video.fps", 30.0)
@@ -110,7 +110,7 @@ def count_video_frames(video_path: Path) -> int:
             except ValueError:
                 pass
         
-        # 方法3: 使用 format duration（最后备用）
+        # method3: use format duration(lastuse)
         cmd_format = [
             "ffprobe",
             "-v", "error",
@@ -169,17 +169,17 @@ def check_subset(dataset_path: Path, subset_name: str) -> dict:
     }
     
     try:
-        # 获取所有 episode
+        # getall episode
         episodes = get_all_episodes(dataset_path)
         if len(episodes) == 0:
             result["error"] = "No episodes found"
             return result
         
-        # 随机选择一个 episode
+        # random episode
         episode_index = random.choice(episodes)
         result["episode_index"] = episode_index
         
-        # 统计 data 帧数
+        # statistics data frame
         data_frames = count_data_frames(dataset_path, episode_index)
         result["data_frames"] = data_frames
         
@@ -187,13 +187,13 @@ def check_subset(dataset_path: Path, subset_name: str) -> dict:
             result["error"] = f"Failed to read data file for episode {episode_index}"
             return result
         
-        # 获取 video keys
+        # get video keys
         video_keys = get_video_keys(dataset_path)
         if len(video_keys) == 0:
             result["error"] = "No video keys found"
             return result
         
-        # 统计每个 camera 的视频帧数
+        # statistics camera videoframe
         info = load_info(dataset_path)
         video_path_template = info.get("video_path", "videos/chunk-{episode_chunk:03d}/{video_key}/episode_{episode_index:06d}.mp4")
         chunk_size = info.get("chunks_size", 1000)
@@ -248,7 +248,7 @@ def main():
         print(f"Error: Dataset path does not exist: {dataset_path}")
         return
     
-    # 获取所有子集（子目录）
+    # getall(directory)
     subsets = [d for d in dataset_path.iterdir() if d.is_dir()]
     
     if len(subsets) == 0:
@@ -280,7 +280,7 @@ def main():
             else:
                 print(f"  ❌ Frame count mismatch detected")
     
-    # 汇总统计
+    # statistics
     print("\n" + "=" * 100)
     print("Summary:")
     total_subsets = len(results)

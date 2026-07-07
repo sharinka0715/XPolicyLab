@@ -1,7 +1,7 @@
 # Shared bootstrap for train.sh / train_batch.sh (bashrc, conda, repo_id).
 
 SMOVLA_BASHRC="${SMOVLA_BASHRC:-${HOME}/.bashrc}"
-# 与 .bashrc 中 HF_LEROBOT_HOME 保持一致；source 失败时作兜底
+# Keep in sync with HF_LEROBOT_HOME in .bashrc; use as a fallback when sourcing fails
 SMOVLA_HF_LEROBOT_HOME="${SMOVLA_HF_LEROBOT_HOME:-${HOME}/.cache/huggingface/lerobot}"
 
 smolvla_source_bashrc() {
@@ -11,8 +11,8 @@ smolvla_source_bashrc() {
 		return 0
 	fi
 
-	# 用户 .bashrc 开头有: [ -z "$PS1" ] && return
-	# 非交互 / tmux runner 下 PS1 为空会直接 return，HF_LEROBOT_HOME 等都不会生效
+	# The user .bashrc starts with: [ -z "$PS1" ] && return
+	# In non-interactive or tmux runners, PS1 is empty and returns early, so HF_LEROBOT_HOME and similar variables will not take effect
 	set +u
 	local _saved_ps1="${PS1-}"
 	PS1="${PS1:-smolvla-noninteractive}"

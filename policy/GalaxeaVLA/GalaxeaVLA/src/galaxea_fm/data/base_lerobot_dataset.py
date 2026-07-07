@@ -22,7 +22,7 @@ class BaseLerobotDataset(torch.utils.data.Dataset):
         # shapes
         shape_meta: Dict[str, Any],
         action_size: int, 
-        past_action_size: int = 0, # 不包含当前帧
+        past_action_size: int = 0, # currentframe
         obs_size: int = 1,
 
         # train vs val

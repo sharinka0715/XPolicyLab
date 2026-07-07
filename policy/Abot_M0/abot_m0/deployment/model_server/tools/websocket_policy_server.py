@@ -22,7 +22,7 @@ class WebsocketPolicyServer:
         policy,
         host: str = "0.0.0.0",
         port: int = 10093,
-        idle_timeout: int = -1,  # 新增参数，单位秒，-1表示永不关闭
+        idle_timeout: int = -1,  # New parameter, , -1
         metadata: dict | None = None,
         
     ) -> None:
@@ -69,7 +69,7 @@ class WebsocketPolicyServer:
         while True:
             try:
                 msg = msgpack_numpy.unpackb(await websocket.recv())
-                self._last_active = time.time()  # 每次收到消息刷新活跃时间
+                self._last_active = time.time()  # totime
                 ret = self._route_message(msg)  # route message
                 await websocket.send(packer.pack(ret))
             except websockets.ConnectionClosed:

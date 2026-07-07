@@ -504,7 +504,7 @@ class GR00TN1Tokenization(Tokenization):
     def tokenizer_image_token(
         prompt, tokenizer, image_token_index=IMAGE_TOKEN_INDEX, return_tensors=None
     ):
-        # 以<image>为锚点split prompt
+        # <image>assplit prompt
         prompt_chunks = [
             tokenizer(chunk).input_ids for chunk in prompt.split("<image>")
         ]

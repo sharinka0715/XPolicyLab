@@ -66,7 +66,7 @@ class Qwen_MMDiT(baseframework):
         # align dims --> we should put them to config or no?
         self.config.framework.action_model.diffusion_model_cfg.cross_attention_dim = self.qwen_vl_interface.model.config.hidden_size
 
-        self.action_model: FlowmatchingActionHead = get_action_model(config=self.config)  # 修复后续引用
+        self.action_model: FlowmatchingActionHead = get_action_model(config=self.config)  # Fix later references
 
         self.future_action_window_size = config.framework.action_model.future_action_window_size
         self.past_action_window_size = config.framework.action_model.past_action_window_size
@@ -133,7 +133,7 @@ class Qwen_MMDiT(baseframework):
         # Step 4: Action Expert Forward and Loss
         # with torch.autocast("cuda", dtype=torch.float32):
         with torch.autocast("cuda", dtype=torch.bfloat16):
-            # 标签对齐：取最后 chunk_len 段
+            # Label alignment: take the last chunk_len segments
             actions = torch.from_numpy(np.array(actions)).to(last_hidden.device, dtype=last_hidden.dtype) # [B, T_full, action_dim]
             actions_target = actions[:, -(self.future_action_window_size+1):, :]  # (B, chunk_len, action_dim)
 

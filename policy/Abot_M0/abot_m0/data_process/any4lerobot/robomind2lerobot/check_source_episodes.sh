@@ -1,12 +1,12 @@
 #!/bin/bash
-# 检查 RoboMIND 原始格式中每个 task 的 episode 数量
-# 分别测试不同的 benchmark 和 embodiment 组合
+# check RoboMIND in task episode number
+# benchmark and embodiment
 
 SCRIPT="check_source_episodes.py"
 SRC_PATH="/mnt/nas-data-4/gaowo.cyz/RoboMIND"
 OUTPUT_DIR="./source_episodes_reports"
 
-# 创建输出目录
+# Create the output directory
 mkdir -p "$OUTPUT_DIR"
 
 echo "=========================================="
@@ -15,7 +15,7 @@ echo "=========================================="
 echo ""
 
 # # Benchmark 1.0
-# echo "检查 benchmark1_0_compressed..."
+# echo "check benchmark1_0_compressed..."
 # python "$SCRIPT" \
 #     --src-path "$SRC_PATH" \
 #     --benchmarks benchmark1_0_compressed \
@@ -37,7 +37,7 @@ python "$SCRIPT" \
 # echo ""
 
 # # Benchmark 1.2
-# echo "检查 benchmark1_2_compressed..."
+# echo "check benchmark1_2_compressed..."
 # python "$SCRIPT" \
 #     --src-path "$SRC_PATH" \
 #     --benchmarks benchmark1_2_compressed \
@@ -47,12 +47,12 @@ python "$SCRIPT" \
 
 # echo ""
 
-# 生成汇总报告
+# generate
 echo "=========================================="
 echo "生成汇总报告..."
 echo "=========================================="
 
-# 合并所有报告到一个文件
+# alltofile
 SUMMARY_FILE="$OUTPUT_DIR/all_benchmarks_summary.txt"
 echo "RoboMIND 源数据 Episode 数量汇总报告" > "$SUMMARY_FILE"
 echo "生成时间: $(date)" >> "$SUMMARY_FILE"

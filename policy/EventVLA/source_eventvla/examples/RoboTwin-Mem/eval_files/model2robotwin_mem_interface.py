@@ -935,13 +935,13 @@ class ModelClient:
 
     def _ensure_episode_keyframe_dir(self) -> Path:
         if self.current_episode_keyframe_dir is None:
-            # 1. 正常清理文件名中的特殊字符
+            # 1. filein
             task_name = self._sanitize_name(self.task_description)
             
-            # 2. 强制截断长度，例如限制在前 64 个字符
+            # 2. , limitinbefore 64
             task_name_short = task_name[:10]
             
-            # 3. 拼接短命名
+            # 3.
             episode_dir_name = f"episode_{self.keyframe_episode_index:04d}_{task_name_short}"
             
             self.current_episode_keyframe_dir = self.keyframe_output_dir / episode_dir_name

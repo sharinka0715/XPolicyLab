@@ -52,9 +52,9 @@ class DinoSigLIPViTBackbone(VisionBackbone):
     def __init__(self, vision_backbone_id: str, image_resize_strategy: str, default_image_size: int = 384) -> None:
         super().__init__(vision_backbone_id, image_resize_strategy, default_image_size=default_image_size)
         
-        # 如果是"dino-siglip"，检查是否存在本地模型路径
+        # if"dino-siglip", checkinmodelpath
         import os
-        # 获取模型的本地路径
+        # getmodel path
         current_file_path = os.path.abspath(__file__)
         current_folder_path = os.path.dirname(current_file_path)
         parent_folder_path = os.path.dirname(os.path.dirname(current_folder_path))
@@ -62,11 +62,11 @@ class DinoSigLIPViTBackbone(VisionBackbone):
             
         print(f"Using models from: {dino_siglip_dir}")
             
-        # 直接使用timm模型ID作为基础模型
+        # usetimmmodelIDasmodel
         dino_model_id = DINOSigLIP_VISION_BACKBONES[vision_backbone_id]["dino"]
         siglip_model_id = DINOSigLIP_VISION_BACKBONES[vision_backbone_id]["siglip"]
             
-        # 初始化模型 - 使用绝对路径加载本地模型
+        # model - useforpathloadmodel
         dino_model_path = os.path.join(dino_siglip_dir, dino_model_id, "pytorch_model.bin")
         siglip_model_path = os.path.join(dino_siglip_dir, siglip_model_id, "open_clip_pytorch_model.bin")
         

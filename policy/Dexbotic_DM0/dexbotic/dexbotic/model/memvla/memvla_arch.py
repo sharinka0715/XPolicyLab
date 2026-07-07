@@ -123,12 +123,12 @@ class CrossTransformerBlock(nn.Module):
             q, k, v, dropout_p=self.dropout, is_causal=False
         )  # (B, h, N, d_h)
 
-        attn_out = attn_out.transpose(1, 2).reshape(B, N, D)  # 合并头
+        attn_out = attn_out.transpose(1, 2).reshape(B, N, D)  # Translated comment
 
-        # 残差 + LN
+        # + LN
         x = self.attn_norm(query + attn_out)
 
-        # FFN + 残差 + LN
+        # FFN + + LN
         ffn_out = self.ffn(x)
         return self.ffn_norm(x + ffn_out)
 

@@ -11,7 +11,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-# 添加项目路径到sys.path
+# Add the project path to sys.path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
@@ -101,7 +101,7 @@ def get_episode_video_info(episodes_dict: Dict[int, Dict], episode_index: int, v
     
     episode_meta = episodes_dict[episode_index]
     
-    # 获取video相关的列（使用斜杠格式）
+    # Get video-related columns using slash format
     chunk_col = f"videos/{video_key}/chunk_index"
     file_col = f"videos/{video_key}/file_index"
     from_ts_col = f"videos/{video_key}/from_timestamp"
@@ -180,7 +180,7 @@ def find_frame_by_timestamp(
     chunk_col = f"videos/{video_key}/chunk_index"
     file_col = f"videos/{video_key}/file_index"
     
-    # 找到包含该时间戳的episode
+    # totime episode
     matching_episode = None
     for episode_index, episode_meta in episodes_dict.items():
         from_ts = float(episode_meta[from_ts_col])
@@ -194,13 +194,13 @@ def find_frame_by_timestamp(
     
     episode_index, episode_meta = matching_episode
     
-    # 计算在该episode内的相对时间戳
+    # computeinepisode fortime
     relative_timestamp = timestamp - float(episode_meta[from_ts_col])
     
-    # 计算frame索引（在该episode内的frame索引）
+    # Calculate the frame index within this episode
     frame_index_in_episode = int(relative_timestamp * fps)
     
-    # 确保frame_index不超过episode长度
+    # Ensure frame_index does not exceed the episode length
     episode_length = int(episode_meta["length"])
     frame_index_in_episode = min(frame_index_in_episode, episode_length - 1)
     
@@ -233,7 +233,7 @@ def main():
         print(f"错误: 数据集目录不存在: {dataset_dir}")
         return
     
-    # 加载数据集
+    # Load dataset
     print(f"正在加载数据集: {dataset_dir}")
     try:
         dataset = load_dataset(dataset_dir, args.eef_type, args.save_depth)
@@ -250,11 +250,11 @@ def main():
     print(f"  - 总frame数: {dataset.meta.total_frames}")
     print(f"  - FPS: {info.get('fps', 30)}")
     
-    # 获取所有video keys
+    # Get all video keys
     video_keys = dataset.meta.video_keys
     print(f"  - Video keys: {video_keys}\n")
     
-    # 示例1: 查询指定episode的video信息
+    # Example1: Query video information for the specified episode
     if args.episode_index is not None:
         episode_idx = args.episode_index
         video_key = args.video_key or video_keys[0] if video_keys else None
@@ -277,7 +277,7 @@ def main():
         else:
             print(f"  未找到episode {episode_idx} 的video信息")
     
-    # 示例2: 根据video文件查找episode
+    # Example2: Find the episode from the video file
     elif args.chunk_index is not None and args.file_index is not None:
         chunk_idx = args.chunk_index
         file_idx = args.file_index
@@ -303,7 +303,7 @@ def main():
         else:
             print(f"  未找到对应的episode")
     
-    # 示例3: 根据时间戳查找frame
+    # Example3: timeframe
     elif args.timestamp is not None:
         timestamp = args.timestamp
         video_key = args.video_key or video_keys[0] if video_keys else None
@@ -332,7 +332,7 @@ def main():
         else:
             print(f"  未找到时间戳 {timestamp:.3f}s 对应的episode")
     
-    # 默认: 展示所有episode的video信息（前10个）
+    # Default: show video information for all episodes, first 10 only
     else:
         print("\n展示前10个episode的video信息:")
         video_key = video_keys[0] if video_keys else None

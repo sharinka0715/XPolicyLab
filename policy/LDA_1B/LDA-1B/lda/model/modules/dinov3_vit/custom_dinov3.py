@@ -41,7 +41,7 @@ class DINOv3ViTConfig:
         self.use_gated_mlp = config_dict.get("use_gated_mlp", False)
         self.value_bias = config_dict.get("value_bias", True)
         
-        # 计算embed_dim
+        # Compute embed_dim
         self.embed_dim = self.hidden_size
 
 
@@ -58,7 +58,7 @@ class DINOv3ViTEmbeddings(nn.Module):
             config.num_channels, config.hidden_size, kernel_size=config.patch_size, stride=config.patch_size
         )
         
-        # 初始化权重
+        # Initialize weights
         nn.init.trunc_normal_(self.cls_token, std=config.initializer_range)
         nn.init.trunc_normal_(self.register_tokens, std=config.initializer_range)
         nn.init.zeros_(self.mask_token)
@@ -68,7 +68,7 @@ class DINOv3ViTEmbeddings(nn.Module):
         embeddings = self.patch_embeddings(pixel_values)  # (B, hidden_size, H, W)
         embeddings = embeddings.flatten(2).transpose(1, 2)  # (B, num_patches, hidden_size)
         
-        # 添加CLS token和register tokens
+        # Add CLS token and register tokens
         cls_tokens = self.cls_token.expand(batch_size, -1, -1)
         register_tokens = self.register_tokens.expand(batch_size, -1, -1)
         
@@ -93,25 +93,25 @@ class DINOv3ViTAttention(nn.Module):
     def forward(self, hidden_states):
         batch_size, seq_len, hidden_size = hidden_states.shape
         
-        # 计算Q, K, V
+        # Compute Q, K, V
         q = self.q_proj(hidden_states)
         k = self.k_proj(hidden_states)
         v = self.v_proj(hidden_states)
         
-        # 重塑为多头格式
+        # Reshape to multi-head format
         q = q.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         k = k.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         v = v.view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         
-        # 计算注意力
+        # Compute attention
         attn_weights = torch.matmul(q, k.transpose(-2, -1)) / (self.head_dim ** 0.5)
         attn_weights = torch.softmax(attn_weights, dim=-1)
         
-        # 应用注意力到值
+        # Apply attention to values
         attn_output = torch.matmul(attn_weights, v)
         attn_output = attn_output.transpose(1, 2).contiguous().view(batch_size, seq_len, hidden_size)
         
-        # 输出投影
+        # Output projection
         attn_output = self.o_proj(attn_output)
         return attn_output
 
@@ -172,14 +172,14 @@ class DINOv3ViTLayer(nn.Module):
         self.layer_scale2 = DINOv3ViTLayerScale(config)
         
     def forward(self, hidden_states):
-        # 自注意力 + 残差连接
+        # Self-attention + residual connection
         residual = hidden_states
         hidden_states = self.norm1(hidden_states)
         hidden_states = self.attention(hidden_states)
         hidden_states = self.layer_scale1(hidden_states)
         hidden_states = residual + hidden_states
         
-        # MLP + 残差连接
+        # MLP + residual connection
         residual = hidden_states
         hidden_states = self.norm2(hidden_states)
         hidden_states = self.mlp(hidden_states)
@@ -196,18 +196,18 @@ class DINOv3ViTModel(nn.Module):
         super().__init__()
         self.config = config
         
-        # 嵌入层
+        # Embedding layer
         self.embeddings = DINOv3ViTEmbeddings(config)
         
-        # Transformer层
+        # Transformer layers
         self.layers = nn.ModuleList([
             DINOv3ViTLayer(config) for _ in range(config.num_hidden_layers)
         ])
         
-        # 最终层归一化
+        # Final layer normalization
         self.norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         
-        # 初始化权重
+        # Initialize weights
         self.apply(self._init_weights)
         
     def _init_weights(self, module):
@@ -240,17 +240,17 @@ class DINOv3ViTModel(nn.Module):
             module.lambda1.data.fill_(self.config.layerscale_value)
     
     def forward(self, pixel_values):
-        # 嵌入
+        # Embedding
         hidden_states = self.embeddings(pixel_values)
         
-        # Transformer层
+        # Transformer layers
         for layer in self.layers:
             hidden_states = layer(hidden_states)
         
-        # 最终归一化
+        # Final normalization
         hidden_states = self.norm(hidden_states)
         
-        # 分离CLS token和patch tokens
+        # CLS tokenandpatch tokens
         cls_token = hidden_states[:, 0]  # CLS token
         patch_tokens = hidden_states[:, 1+self.config.num_register_tokens:]  # patch tokens
         
@@ -264,7 +264,7 @@ class DINOv3ViTModel(nn.Module):
 def load_dinov3_from_checkpoint(checkpoint_path: str) -> DINOv3ViTModel:
     """从checkpoint加载DINOv3ViTModel"""
     
-    # 加载配置
+    # loadconfig
     config_path = os.path.join(checkpoint_path, "config.json")
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"Config file not found: {config_path}")
@@ -274,26 +274,26 @@ def load_dinov3_from_checkpoint(checkpoint_path: str) -> DINOv3ViTModel:
     
     config = DINOv3ViTConfig(config_dict)
     
-    # 创建模型
+    # createmodel
     model = DINOv3ViTModel(config)
     
-    # 加载权重
+    # load
     weights_path = os.path.join(checkpoint_path, "model.safetensors")
     if os.path.exists(weights_path):
-        # 使用safetensors加载
+        # usesafetensorsload
         state_dict = {}
         with safe_open(weights_path, framework="pt", device="cpu") as f:
             for key in f.keys():
                 state_dict[key] = f.get_tensor(key)
     else:
-        # 尝试加载pytorch_model.bin
+        # loadpytorch_model.bin
         weights_path = os.path.join(checkpoint_path, "pytorch_model.bin")
         if os.path.exists(weights_path):
             state_dict = torch.load(weights_path, map_location="cpu")
         else:
             raise FileNotFoundError(f"No weights file found in {checkpoint_path}")
     
-    # 加载权重到模型
+    # loadtomodel
     missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
     
     if missing_keys:
@@ -307,7 +307,7 @@ def load_dinov3_from_checkpoint(checkpoint_path: str) -> DINOv3ViTModel:
 def load_dinov3_from_pth(pth_path: str, model_size: str = "s") -> DINOv3ViTModel:
     """从.pth文件加载DINOv3ViTModel"""
     
-    # 根据模型大小创建配置
+    # modelsizecreateconfig
     size_to_config = {
         "s": {"hidden_size": 384, "num_hidden_layers": 12, "num_attention_heads": 6},
         "b": {"hidden_size": 768, "num_hidden_layers": 12, "num_attention_heads": 12},
@@ -317,7 +317,7 @@ def load_dinov3_from_pth(pth_path: str, model_size: str = "s") -> DINOv3ViTModel
     
     model_config = size_to_config.get(model_size, size_to_config["s"])
     
-    # 创建配置
+    # createconfig
     config_dict = {
         "hidden_size": model_config["hidden_size"],
         "num_hidden_layers": model_config["num_hidden_layers"],
@@ -339,16 +339,16 @@ def load_dinov3_from_pth(pth_path: str, model_size: str = "s") -> DINOv3ViTModel
     
     config = DINOv3ViTConfig(config_dict)
     
-    # 创建模型
+    # createmodel
     model = DINOv3ViTModel(config)
     
-    # 加载权重
+    # load
     checkpoint = torch.load(pth_path, map_location='cpu')
     
-    # 转换权重格式
+    # convert
     converted_state_dict = convert_dinov3_state_dict(checkpoint)
     
-    # 加载权重
+    # load
     missing_keys, unexpected_keys = model.load_state_dict(converted_state_dict, strict=False)
     
     if missing_keys:
@@ -365,7 +365,7 @@ def convert_dinov3_state_dict(state_dict):
     
     converted_dict = {}
     
-    # 定义key映射规则
+    # key
     key_mappings = {
         r"cls_token": r"embeddings.cls_token",
         r"mask_token": r"embeddings.mask_token", 
@@ -385,11 +385,11 @@ def convert_dinov3_state_dict(state_dict):
     for old_key, tensor in state_dict.items():
         new_key = old_key
         
-        # 应用正则表达式替换
+        # use
         for pattern, replacement in key_mappings.items():
             new_key = re.sub(pattern, replacement, new_key)
         
-        # 处理特殊情况
+        # process
         if "bias_mask" in old_key or "attn.k_proj.bias" in old_key or "local_cls_norm" in old_key:
             continue
         if "embeddings.mask_token" in new_key:

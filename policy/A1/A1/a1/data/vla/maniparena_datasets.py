@@ -233,11 +233,11 @@ class ManiparenaDatasetWrapper(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, item):
-        # 遵循上层索引；若直接通过 __getitem__ 调用，则使用全局 np.random
+        # Follow the parent index; if called directly through __getitem__, use global np.random
         return self.get(item, np.random)
     
     def get(self, item, rng):
-        # 严格使用传入的 item；只有在 item 非法时才回退到 rng 随机采样
+        # Use the provided item strictly; fall back to rng random sampling only when item is invalid
         if isinstance(item, (int, np.integer)) and 0 <= int(item) < len(self.dataset):
             idx = int(item)
         else:
@@ -296,7 +296,7 @@ class ManiparenaDatasetWrapper(Dataset):
 
         instruction = data_item['task']
 
-        # 生成与动作同形状的padding掩码，pad位置标记为True
+        # generateandaction padding mask, pad positionsasTrue
         action_pad_mask = np.zeros_like(action, dtype=bool)
         # if pad_len_action > 0:
         #     action_pad_mask[:, -pad_len_action:] = True

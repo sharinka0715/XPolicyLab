@@ -28,7 +28,7 @@ def get_episode_ids_from_data_files(local_dir: Path) -> set[int]:
         print(f"警告: data目录不存在: {data_dir}")
         return episode_ids
     
-    # 查找所有parquet文件
+    # allparquetfile
     parquet_files = sorted(data_dir.glob("chunk-*/file-*.parquet"))
     
     if not parquet_files:
@@ -37,13 +37,13 @@ def get_episode_ids_from_data_files(local_dir: Path) -> set[int]:
     
     print(f"  找到 {len(parquet_files)} 个parquet文件")
     
-    # 读取每个parquet文件
+    # readparquetfile
     for parquet_file in parquet_files:
         try:
             table = pq.read_table(parquet_file)
             df = table.to_pandas()
             
-            # 检查是否有episode_index列
+            # checkepisode_indexcolumn
             if 'episode_index' in df.columns:
                 unique_episodes = df['episode_index'].unique()
                 episode_ids.update([int(ep_idx) for ep_idx in unique_episodes])
@@ -66,10 +66,10 @@ def get_episode_ids_from_video_files(dataset: AgiBotDataset, local_dir: Path) ->
         print("警告: 无法访问episode metadata")
         return dict(video_episode_ids)
     
-    # 获取video路径模板
+    # getvideopath
     video_path_template = dataset.meta.info.get("video_path", "videos/{video_key}/chunk-{chunk_index:03d}/file-{file_index:03d}.mp4")
     
-    # 遍历所有episode
+    # iterateallepisode
     for item in dataset.meta.episodes:
         episode_index = item.get('episode_index')
         if episode_index is None:
@@ -80,26 +80,26 @@ def get_episode_ids_from_video_files(dataset: AgiBotDataset, local_dir: Path) ->
         except (ValueError, TypeError):
             continue
         
-        # 遍历所有video keys
+        # iterateallvideo keys
         for video_key in dataset.meta.video_keys:
-            # 从episode metadata中获取video文件的chunk_index和file_index
+            # fromepisode metadataingetvideofile chunk_indexandfile_index
             chunk_key = f"videos/{video_key}/chunk_index"
             file_key = f"videos/{video_key}/file_index"
             
-            # 获取chunk_index和file_index
+            # getchunk_indexandfile_index
             chunk_index = item.get(chunk_key)
             file_index = item.get(file_key)
             
-            # 检查值是否存在且不为None
+            # checkvalueinasNone
             if chunk_index is not None and file_index is not None:
-                # 转换为整数
+                # Convert to
                 try:
                     chunk_index = int(chunk_index)
                     file_index = int(file_index)
                 except (ValueError, TypeError) as e:
                     continue
                 
-                # 构建video文件路径
+                # videofilepath
                 try:
                     video_path = local_dir / video_path_template.format(
                         video_key=video_key,
@@ -107,10 +107,10 @@ def get_episode_ids_from_video_files(dataset: AgiBotDataset, local_dir: Path) ->
                         file_index=file_index
                     )
                 except KeyError:
-                    # 如果format失败，尝试手动构建路径
+                    # ifformat, path
                     video_path = local_dir / "videos" / video_key / f"chunk-{chunk_index:03d}" / f"file-{file_index:03d}.mp4"
                 
-                # 检查文件是否存在
+                # checkfilein
                 if video_path.exists():
                     video_episode_ids[video_key].add(episode_index)
     
@@ -140,14 +140,14 @@ def check_episode_consistency(local_dir: Path, eef_type: str, save_depth: bool =
     print(f"目录路径: {local_dir}")
     print(f"{'='*60}\n")
     
-    # 加载数据集配置
+    # Load datasetconfig
     agibot_world_config = AgiBotWorld_TASK_TYPE[eef_type]["task_config"]
     features = generate_features_from_config(agibot_world_config)
     
     if not save_depth:
         features.pop("observation.images.head_depth", None)
     
-    # 加载数据集
+    # Load dataset
     try:
         dataset = AgiBotDataset(
             repo_id=local_dir.name,
@@ -162,13 +162,13 @@ def check_episode_consistency(local_dir: Path, eef_type: str, save_depth: bool =
         print(f"错误: 无法加载数据集 - {e}")
         return False
     
-    # 从数据中获取episode ids
+    # fromdataingetepisode ids
     print("正在从数据中提取episode ids...")
     data_episode_ids = get_episode_ids_from_data(dataset)
     print(f"数据中的episode ids: {sorted(data_episode_ids)}")
     print(f"数据中的episode数量: {len(data_episode_ids)}\n")
     
-    # 从video文件中获取episode ids（通过检查metadata中指定的video文件是否存在）
+    # fromvideofileingetepisode ids(checkmetadatain videofilein)
     print("正在从video metadata中提取episode ids并检查文件是否存在...")
     video_episode_ids_dict = get_episode_ids_from_videos(dataset, local_dir)
     
@@ -176,14 +176,14 @@ def check_episode_consistency(local_dir: Path, eef_type: str, save_depth: bool =
         print("警告: 未找到任何video文件")
         return False
     
-    # 检查每个video key的一致性
+    # checkvideo key
     all_consistent = True
     for video_key, video_episode_ids in video_episode_ids_dict.items():
         print(f"\n检查 video key: {video_key}")
         print(f"  数据中的episode数量: {len(data_episode_ids)}")
         print(f"  找到对应video文件的episode数量: {len(video_episode_ids)}")
         
-        # 检查是否一致
+        # check
         data_only = data_episode_ids - video_episode_ids
         video_only = video_episode_ids - data_episode_ids
         
@@ -193,18 +193,18 @@ def check_episode_consistency(local_dir: Path, eef_type: str, save_depth: bool =
         
         if video_only:
             print(f"  ⚠️  Video文件存在但数据中没有的episode ids: {sorted(video_only)}")
-            # 这种情况可能是正常的，因为一个video文件可能包含多个episode
+            # , asvideofileepisode
         
         if not data_only and not video_only and len(data_episode_ids) == len(video_episode_ids):
             print(f"  ✅ 数据中的所有episode都有对应的video文件")
         
-        # 检查数量是否一致
+        # checknumber
         if len(data_episode_ids) != len(video_episode_ids):
             print(f"  ⚠️  数量不一致: 数据中有 {len(data_episode_ids)} 个episode, 但只有 {len(video_episode_ids)} 个episode有对应的video文件")
             if len(video_episode_ids) < len(data_episode_ids):
                 all_consistent = False
     
-    # 总结
+    # Translated comment
     print(f"\n{'='*60}")
     if all_consistent:
         print("✅ 检查通过: 所有video key的episode ids都与数据中的episode ids一致")

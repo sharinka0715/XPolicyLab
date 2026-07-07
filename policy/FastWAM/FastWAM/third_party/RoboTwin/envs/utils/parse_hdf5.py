@@ -11,12 +11,12 @@ def parse_img_array(data):
     Returns:
         imgs: np.ndarray of shape (N, H, W, C), dtype=uint8
     """
-    # 确保 data 是可迭代的一维数组
+    # ensure data
     flat = data.ravel()
 
     imgs = []
     for buf in flat:
-        # buf 可能是 bytes，也可能是 np.ndarray(dtype=uint8)
+        # buf bytes, np.ndarray(dtype=uint8)
         if isinstance(buf, (bytes, bytearray)):
             arr = np.frombuffer(buf, dtype=np.uint8)
         elif isinstance(buf, np.ndarray) and buf.dtype == np.uint8:
@@ -24,13 +24,13 @@ def parse_img_array(data):
         else:
             raise TypeError(f"Unsupported buffer type: {type(buf)}")
 
-        # 解码成 BGR 图像
+        # BGR Image
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
         if img is None:
             raise ValueError("cv2.imdecode 返回 None，说明字节流可能不是有效的图片格式")
         imgs.append(img)
 
-    # 将 list 转成形如 (N, H, W, C) 的 ndarray
+    # list (N, H, W, C) ndarray
     return np.stack(imgs, axis=0)
 
 
@@ -44,9 +44,9 @@ def h5_to_dict(node):
             else:
                 result[name] = data
         elif isinstance(item, h5py.Group):
-            # 递归处理子 group
+            # process group
             result[name] = h5_to_dict(item)
-    # 如果你还想把 attributes 一并读进来，可以：
+    # if attributes , :
     if hasattr(node, "attrs") and len(node.attrs) > 0:
         result["_attrs"] = dict(node.attrs)
     return result

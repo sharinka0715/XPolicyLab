@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Standard XPolicyLab contract:
 #   bash process_data.sh <bench_name> <ckpt_name> <env_cfg_type> <action_type> [expert_data_num]
-# LingBot_VA data is prepared by the upstream LeRobot pipeline (see README §数据处理).
+# LingBot_VA data is prepared by the upstream LeRobot pipeline (see the README data processing section).
 # This wrapper validates the standard args; point LEROBOT_DATASET_REPO_ID or
 # LINGBOT_VA_DATASET_PATH at the converted dataset before training.
 

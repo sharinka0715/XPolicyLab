@@ -27,7 +27,7 @@ import torch
 
 from scripts.train_for_action import main as train
 
-# 启用内存效率优化
+# use
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 
@@ -144,12 +144,12 @@ if __name__ == "__main__":
         parser.add_argument("--action_head_dit_num_heads", default=16, type=int,)
 
         parser.add_argument("--action_head_flow_matching_dim", default=1024, type=int)
-        # 若为 -1，则默认对齐主 VLM 的 model_cfg.n_layers
+        # as -1, defaultfor VLM model_cfg.n_layers
         parser.add_argument("--action_head_flow_matching_layers", default=-1, type=int)
-        # FM 里小 Qwen2 的注意力头数，可与主 VLM 不同，默认为 8
+        # FM Qwen2 Note, and VLM , defaultas 8
         parser.add_argument("--action_head_flow_matching_heads", default=8, type=int)
         parser.add_argument("--action_head_flow_matching_intermediate_size", default=2048, type=int)
-        # KV 头数：若为 -1，则默认对齐主 VLM 的 n_kv_heads（若为 None 则回退到 n_heads）
+        # KV : as -1, defaultfor VLM n_kv_heads(as None fallbackto n_heads)
         parser.add_argument("--action_head_flow_matching_kv_heads", default=-1, type=int)
         parser.add_argument("--action_head_flow_matching_pvf_function", default="2d_attn_mask", type=str, choices=["2d_attn_mask", "4d_attn_mask"])
 
@@ -235,7 +235,7 @@ if __name__ == "__main__":
                 else:
                     model_cfg = ModelConfig.load(join(args.checkpoint, "config.yaml"), key="model")
 
-                # 根据主 VLM 的配置，确定 FM head 的层数与 KV 头数（可被 CLI 覆盖）
+                # VLM config, FM head and KV ( CLI )
                 fm_layers = args.action_head_flow_matching_layers if args.action_head_flow_matching_layers > 0 else model_cfg.n_layers
                 fm_kv_heads = (
                     args.action_head_flow_matching_kv_heads
@@ -281,7 +281,7 @@ if __name__ == "__main__":
             else:
                 vit_layers = [-2, -9] if args.vision_backbone == "openai" else [-3, -9]
                 base_cfg = LLMS[args.llm]
-                # 未从 checkpoint 加载时，同样按主 VLM 的配置确定默认层数与 KV 头数
+                # from checkpoint load, by VLM configdefaultand KV
                 fm_layers = args.action_head_flow_matching_layers if args.action_head_flow_matching_layers > 0 else base_cfg.n_layers
                 fm_kv_heads = (
                     args.action_head_flow_matching_kv_heads

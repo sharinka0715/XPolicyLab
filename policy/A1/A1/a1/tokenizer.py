@@ -124,7 +124,7 @@ def build_tokenizer(
             tokenizer_type,
             token=environ.get("HF_ACCESS_TOKEN"),
             cache_dir=cache_dir,
-            # local_files_only=True,  # 添加这个参数
+            # local_files_only=True, # addparameter
         )
     barrier()
 

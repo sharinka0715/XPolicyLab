@@ -58,10 +58,10 @@ class CategorySpecificLinear(nn.Module):
         self.b = nn.Parameter(torch.empty(num_categories, hidden_dim))
         self.init_params()
     def init_params(self):
-        # 对每个 category 独立初始化，模仿 nn.Linear
+        # for category , nn.Linear
         for i in range(self.num_categories):
             tmp_linear = nn.Linear(self.W.shape[1], self.W.shape[2])  # in_dim -> hidden_dim
-            self.W.data[i] = tmp_linear.weight.t().clone()  # 因为 Linear 是 (out, in)，我们存 (in, out)
+            self.W.data[i] = tmp_linear.weight.t().clone()  # as Linear (out, in), (in, out)
             self.b.data[i] = tmp_linear.bias.clone()
     def forward(self, x, cat_ids):
         selected_W = self.W[cat_ids]

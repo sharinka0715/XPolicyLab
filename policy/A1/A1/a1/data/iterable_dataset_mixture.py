@@ -32,17 +32,17 @@ def random_erasing_numpy(image: np.ndarray, rng: np.random.RandomState,
     h, w = img_array.shape[:2]
     
     if num_patches is None:
-        num_patches = rng.randint(1, 4)  # 1-3个
+        num_patches = rng.randint(1, 4)  # 1-3
     
     for _ in range(num_patches):
-        # 随机选择遮挡块大小
+        # Randomly choose occlusion patch sizes
         patch_size = rng.randint(patch_size_range[0], patch_size_range[1] + 1)
         
-        # 随机选择位置（确保不超出边界）
+        # Randomly choose positions, ensuring they stay within bounds
         x = rng.randint(0, max(1, w - patch_size + 1))
         y = rng.randint(0, max(1, h - patch_size + 1))
         
-        # 绘制黑色方块
+        # Draw black squares
         if len(img_array.shape) == 3:
             img_array[y:y+patch_size, x:x+patch_size] = [0, 0, 0]
         else:
@@ -67,17 +67,17 @@ def sharpen_image_numpy(image: np.ndarray, rng: np.random.RandomState,
     if factor is None:
         factor = rng.uniform(2.0, 3.5)
     
-    # 转换为PIL Image
+    # Convert toPIL Image
     if len(image.shape) == 3:
         pil_image = Image.fromarray(image, mode='RGB')
     else:
         pil_image = Image.fromarray(image, mode='L')
     
-    # 使用PIL的锐化滤镜
+    # Use PIL sharpening filter
     enhancer = ImageEnhance.Sharpness(pil_image)
     sharpened = enhancer.enhance(factor)
     
-    # 转换回numpy数组
+    # Convert back to a NumPy array
     return np.array(sharpened)
 
 
@@ -101,7 +101,7 @@ def apply_image_augmentation(item: Dict[str, Any], rng: np.random.RandomState,
     if rng.random() > augmentation_prob:
         return item
     
-    # 决定应用哪种增强
+    # Decide which augmentation to apply
     effects = []
     if enable_random_erasing:
         effects.append('erasing')
@@ -111,10 +111,10 @@ def apply_image_augmentation(item: Dict[str, Any], rng: np.random.RandomState,
     if not effects:
         return item
     
-    # 随机选择一种或多种增强效果
+    # Randomly choose one or more augmentation effects
     effect = rng.choice(effects)
     
-    # 处理 'images' 字段（列表）
+    # Process the 'images' field, which is a list
     if 'images' in item and isinstance(item['images'], list):
         augmented_images = []
         for img in item['images']:
@@ -123,8 +123,8 @@ def apply_image_augmentation(item: Dict[str, Any], rng: np.random.RandomState,
                     img = random_erasing_numpy(img, rng)
                 elif effect == 'sharpening':
                     img = sharpen_image_numpy(img, rng)
-                # 如果同时启用两种效果，随机决定是否都应用
-                if len(effects) > 1 and rng.random() < 0.3:  # 30%概率同时应用两种效果
+                # If two effects are enabled, randomly decide whether to apply both
+                if len(effects) > 1 and rng.random() < 0.3:  # 30%probability of applying both effects
                     if effect == 'erasing' and enable_sharpening:
                         img = sharpen_image_numpy(img, rng)
                     elif effect == 'sharpening' and enable_random_erasing:
@@ -132,7 +132,7 @@ def apply_image_augmentation(item: Dict[str, Any], rng: np.random.RandomState,
             augmented_images.append(img)
         item['images'] = augmented_images
     
-    # 处理 'image' 字段（列表或单个图像）
+    # process 'image' (columnorImage)
     if 'image' in item:
         if isinstance(item['image'], list):
             augmented_images = []
@@ -427,7 +427,7 @@ class SimpleMultiSourceIterableDataset(torch.utils.data.IterableDataset[Dict[str
         # Chunking control: number of consecutive samples from the same source
         self.source_block_size = max(1, int(source_block_size))
 
-        # 图像增强相关参数
+        # Imageparameter
         self.enable_image_augmentation = enable_image_augmentation
         self.enable_random_erasing = enable_random_erasing
         self.enable_sharpening = enable_sharpening
@@ -458,7 +458,7 @@ class SimpleMultiSourceIterableDataset(torch.utils.data.IterableDataset[Dict[str
             # Get next item from current source
             try:
                 item = next(source_iters[current_src])
-                # 应用图像增强
+                # useImage
                 if self.enable_image_augmentation:
                     item = apply_image_augmentation(
                         item, 

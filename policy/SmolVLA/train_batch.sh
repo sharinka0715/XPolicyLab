@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
-# 批量 SmolVLA 训练：每个 task_name(=ckpt_name) 绑定一张 GPU，在独立 tmux 会话中跑 train.sh。
+# Batch SmolVLA training: bind each task_name (=ckpt_name) to one GPU and run train.sh in a separate tmux session.
 #
-# 用法 1 — 环境变量（逗号分隔 task:gpu 或 task:gpu:seed）:
+# Usage 1 - environment variable with comma-separated task:gpu or task:gpu:seed entries:
 #   TASK_GPU_MAP="stack_bowls:0:0,push_T:1:42,build_tower:2" bash train_batch.sh
 #
-# 用法 2 — 命令行参数:
+# Usage 2 - command-line arguments:
 #   bash train_batch.sh stack_bowls:0:0 push_T:1:42 build_tower:2
 #
-# 用法 3 — 编辑下方 DEFAULT_TASK_GPU 数组后:
+# Usage 3 - edit the DEFAULT_TASK_GPU array below:
 #   bash train_batch.sh
 #
-# 环境变量:
-#   SMOVLA_CONDA_ENV        conda 环境名 (默认 smolvla；若你用 smo_vla 请 export)
-#   SMOVLA_DATASET_NAME     默认 RoboDojo
-#   SMOVLA_ENV_CFG_TYPE     默认 arx_x5
-#   SMOVLA_ACTION_TYPE      默认 joint
-#   SMOVLA_SEED             未写 seed 时的默认值 (默认 0)
-#   SMOVLA_TMUX_PREFIX      tmux 会话名前缀 (默认 smolvla)
-#   SMOVLA_TMUX_REPLACE     1=同名会话已存在则先 kill (默认 1)
-#   SMOVLA_DRY_RUN          1=只打印命令不启动 tmux
-#   SMOVLA_REPO_ID_PREFIX   LeRobot repo 前缀 (默认 RoboDojo_sim)
-#   SMOVLA_REPO_ID_SUFFIX   LeRobot repo 后缀 (默认 v30)
-#   SMOVLA_BASHRC           启动前 source 的 bashrc (默认 ${HOME}/.bashrc)
-#   SMOVLA_HF_LEROBOT_HOME  LeRobot 数据根目录 (默认 ${HOME}/.cache/huggingface/lerobot)
+# Environment variables:
+#   SMOVLA_CONDA_ENV        Conda environment name (defaults to smolvla; export it if you use smo_vla)
+#   SMOVLA_DATASET_NAME     Defaults to RoboDojo
+#   SMOVLA_ENV_CFG_TYPE     Defaults to arx_x5
+#   SMOVLA_ACTION_TYPE      Defaults to joint
+#   SMOVLA_SEED             Default seed when none is provided (defaults to 0)
+#   SMOVLA_TMUX_PREFIX      tmux session name prefix (defaults to smolvla)
+#   SMOVLA_TMUX_REPLACE     1 kills an existing same-name session first (defaults to 1)
+#   SMOVLA_DRY_RUN          1 only prints commands without starting tmux
+# SMOVLA_REPO_ID_PREFIX LeRobot repo prefix (Defaults to RoboDojo_sim)
+#   SMOVLA_REPO_ID_SUFFIX   LeRobot repo suffix (defaults to v30)
+#   SMOVLA_BASHRC           bashrc sourced before launch (defaults to ${HOME}/.bashrc)
+#   SMOVLA_HF_LEROBOT_HOME  LeRobot data root (defaults to ${HOME}/.cache/huggingface/lerobot)
 set -euo pipefail
 
 POLICY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,7 +37,7 @@ TMUX_PREFIX="${SMOVLA_TMUX_PREFIX:-smolvla}"
 TMUX_REPLACE="${SMOVLA_TMUX_REPLACE:-1}"
 DRY_RUN="${SMOVLA_DRY_RUN:-0}"
 
-# 无 CLI / 无 TASK_GPU_MAP 时使用；按需修改
+# Used when neither CLI args nor TASK_GPU_MAP is provided; edit as needed
 DEFAULT_TASK_GPU=(
 	"arrange_largest_number:4:0"
 	"arrange_largest_number:4:1"
@@ -95,7 +95,7 @@ declare -A TASK_TO_SEED=()
 declare -a TASK_ORDER=()
 
 normalize_pair() {
-	# 允许 "task : 4 : 0" 这类空格写法
+	# Allow spaced forms such as "task : 4 : 0"
 	local pair="$1"
 	pair="${pair// /}"
 	echo "${pair}"

@@ -21,7 +21,7 @@ source "${POLICY_DIR}/conda_init.sh"
 smolvla_setup_runtime "${CONDA_ENV}"
 
 ckpt_setting="${bench_name}-${ckpt_name}-${env_cfg_type}-${action_type}-${seed}"
-# LeRobot 数据集 repo_id 与 task 对应，例如 build_tower -> RoboDojo_sim_build_tower_v30
+# Map each LeRobot dataset repo_id to its task, for example build_tower -> RoboDojo_sim_build_tower_v30
 REPO_ID="${SMOVLA_REPO_ID:-$(smolvla_repo_id_for_task "${ckpt_name}")}"
 OUTPUT_DIR="${POLICY_DIR}/checkpoints/${ckpt_setting}"
 JOB_NAME="${SMOVLA_JOB_NAME:-${ckpt_setting}}"

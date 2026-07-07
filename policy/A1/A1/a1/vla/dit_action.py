@@ -103,7 +103,7 @@ class DiffusionTransformerRunner(nn.Module):
     def predict_noise_or_sample(self, noise_action, timestep,text_embeds,image_embeds,proprio,text_attn_mask=None):
         # noise_action shape: (B, T, D) where B=batch_size, T=action_horizon, D=action_dim
         # target_dtype = proprio_feat.dtype
-        # proprio暂时没用到, cat 到x？
+        # propriouseto, cat tox？
 
         if self.use_proprio:
             # Concatenate the proprio and action tokens to form the input sequence

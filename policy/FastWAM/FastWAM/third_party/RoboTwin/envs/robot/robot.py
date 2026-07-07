@@ -661,7 +661,7 @@ class Robot:
 
 def planner_process_worker(conn, args):
     import os
-    from .planner import CuroboPlanner  # 或者绝对路径导入
+    from .planner import CuroboPlanner  # orforpath
 
     planner = CuroboPlanner(args["origin_pose"], args["joints_name"], args["all_joints"], yml_path=args["yml_path"])
 

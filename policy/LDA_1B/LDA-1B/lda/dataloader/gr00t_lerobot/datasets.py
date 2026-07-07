@@ -597,7 +597,7 @@ class LeRobotSingleDataset(Dataset):
                     }
                     self.trajectory_ids_to_metadata[trajectory_ids[-1]] = episode_meta
 
-            # 这里应该可以直接读取到 save index 信息
+            # readto save index
             return np.array(trajectory_ids), np.array(trajectory_lengths)
 
     def _get_all_steps(self) -> list[tuple[int, int]]:
@@ -867,9 +867,9 @@ class LeRobotSingleDataset(Dataset):
         elif self._lerobot_version == "v3.0":
             tasks_path = self.dataset_path / LE_ROBOT3_TASKS_FILENAME
             df = pd.read_parquet(tasks_path)
-            df = df.reset_index()  # 把索引变成一列，列名通常为 'index'
-            df = df.rename(columns={'index': 'task'})  # 把 'index' 列重命名为 'task'
-            df = df[['task_index', 'task']]  # 调整列顺序
+            df = df.reset_index()  # Turn the index into a column, usually named 'index'
+            df = df.rename(columns={'index': 'task'})  # Rename the 'index' column to 'task'
+            df = df[['task_index', 'task']]  # columnOrder
             return df
     def _check_integrity(self):
         """Use the config to check if the keys are valid and detect silent data corruption."""
@@ -2175,7 +2175,7 @@ class LeRobotMixtureDataset(Dataset):
                                     wrist_mask = data[f"{action_key}_mask"].reshape(-1, 1)[history_len:] 
                                     mask = mask & wrist_mask
                             if dataset_no_mano and "eef_rotation" in action_key:
-                                # 在padded action后加63维度
+                                # inpadded actionafter63dimension
                                 padded_action = np.concatenate([padded_action, np.zeros((padded_action.shape[0], 63))], axis=1)
                                 padded_history_action = np.concatenate([padded_history_action, np.zeros((padded_history_action.shape[0], 63))], axis=1)
                                 mask = np.concatenate([mask, np.zeros((mask.shape[0], 63), dtype=bool)], axis=1)
@@ -2210,7 +2210,7 @@ class LeRobotMixtureDataset(Dataset):
                                 wrist_mask = raw_data[f"{action_key}_mask"].reshape(-1, 1)[1:]
                                 mask = mask & wrist_mask
                             if dataset_no_mano and "eef_rotation" in action_key:
-                                # 在padded action后加63维度
+                                # inpadded actionafter63dimension
                                 padded_action = np.concatenate([padded_action, np.zeros((padded_action.shape[0], 63))], axis=1)
                                 mask = np.concatenate([mask, np.zeros((mask.shape[0], 63), dtype=bool)], axis=1)
                             action.append(padded_action)

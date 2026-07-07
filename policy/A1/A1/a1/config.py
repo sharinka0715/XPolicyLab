@@ -1987,7 +1987,7 @@ class DiTActionConfig(BaseConfig):
     """
     The path or url of the vision model. "google/siglip-so400m-patch14-384"
     """
-    # 基本训练配置
+    # Basic training config
     run_name: str = "dit_action_train"
     save_folder: str = None
     seed: int = 42
@@ -2000,7 +2000,7 @@ class DiTActionConfig(BaseConfig):
     use_fsdp: bool = False
     ft_vit: bool = False
     
-    # 数据配置
+    # Data config
     dataset_name: str = "libero_spatial_no_noops"
     data_root_dir: str = "/path/to/rlds/data"
     use_wrist_image: bool = True
@@ -2008,7 +2008,7 @@ class DiTActionConfig(BaseConfig):
     sequence_length: int = 768
     num_workers: int = 0
     
-    # 模型配置
+    # Model config
     # action_dim: int = 7
     # action_horizon: int = 8
     num_diffusion_steps: int = 1000
@@ -2017,25 +2017,25 @@ class DiTActionConfig(BaseConfig):
     img_cond_dim: int = 768
     num_patches: int = 196  
     
-    # DiT模型参数
+    # DiT model parameters
     dit_hidden_dim: int = 1024
     dit_depth: int = 14
     dit_num_heads: int = 16
     
-    # 检查点配置
+    # Checkpoint config
     save_interval: int = 500
     eval_interval: int = 500
     log_interval: int = 10
 
-    save_num_checkpoints_to_keep: int = 5  # 保留的检查点数量，-1表示保留所有
-    save_overwrite: bool = False  # 是否覆盖已存在的检查点
+    save_num_checkpoints_to_keep: int = 5  # Number of checkpoints to keep; -1 means keep all
+    save_overwrite: bool = False  # Whether to overwrite existing checkpoints
     
-    # 分布式配置
+    # Distributed config
     precision: str = "amp_bf16"
     gradient_accumulation_steps: int = 1
     max_grad_norm: float = 1.0
     
-    # W&B配置
+    # W&Bconfig
     wandb_project: Optional[str] = None
     wandb_entity: Optional[str] = None
     

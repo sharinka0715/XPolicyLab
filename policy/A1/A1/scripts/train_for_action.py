@@ -52,15 +52,15 @@ from a1.model import OLMoEBlock
 log = logging.getLogger(__name__)
 
 # log.setLevel(logging.INFO)
-# # 创建控制台处理器并设置级别
+# # Create a console handler and set its level
 # ch = logging.StreamHandler()
-# ch.setLevel(logging.INFO)  # 处理器可以有自己的级别
+# ch.setLevel(logging.INFO) # The handler can have its own level
 
-# # 创建格式化器并将其添加到处理器
+# # Create a formatter and add it to the handler
 # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 # ch.setFormatter(formatter)
 
-# # 将处理器添加到记录器
+# # Add the handler to the logger
 # log.addHandler(ch)
 
 def main(cfg: TrainConfig) -> None:
@@ -195,16 +195,16 @@ def main(cfg: TrainConfig) -> None:
         if get_global_rank() == 0:
             log.info(f'***** Pre-FSDP unsharded load from: {state_dict_path}')
             state_dict = torch.load(state_dict_path, map_location="cpu")
-            # 兼容/筛选键名后加载；放宽 strict
+            # Load after matching/filtering key names; relax strict
             to_load, _ = olmo_model._make_state_dict_compatible(state_dict)
-            # 仅加载交集键，避免不同命名空间导致报错
+            # Load only intersecting keys to avoid errors from different namespaces
             # model_keys = set(olmo_model.state_dict().keys())
             # filtered = {k: v for k, v in to_load.items() if k in model_keys}
             # missing_cnt = len([k for k in model_keys if k not in to_load])
             # unexpected_cnt = len([k for k in to_load.keys() if k not in model_keys])
             # log.info(f"Pre-FSDP filtered load: keep={len(filtered)} missing={missing_cnt} unexpected={unexpected_cnt}")
             olmo_model.load_state_dict(to_load, strict=True)
-        # 同步所有 rank 再继续
+        # Synchronize all ranks before continuing
         barrier()
 
     
@@ -255,7 +255,7 @@ def main(cfg: TrainConfig) -> None:
     ###
 
     log.info("Wrapping model with FDSP...")
-    # # 确保整个模型使用统一的数据类型
+    # # Ensure the whole model uses a consistent dtype
     # if cfg.precision == "amp_bf16":
     #     log.info("Converting entire model to bfloat16 before FSDP wrapping...")
     #     olmo_model.to(torch.bfloat16)
@@ -345,12 +345,12 @@ def main(cfg: TrainConfig) -> None:
         hybrid_sharding_fsdp_kwargs["device_mesh"] = device_mesh
 
 
-    # # 根据GPU数量调整分片策略
+    # # GPU count
     # world_size = get_world_size()
     # if world_size == 1:
     #     log.info("Single GPU training detected, using NO_SHARD strategy")
     #     sharding_strategy = ShardingStrategy.NO_SHARD
-    #     sync_module_states = False  # 单卡时不需要同步
+    # sync_module_states = False # single GPUdoes not need synchronization
     # else:
     #     sharding_strategy = cfg.fsdp.sharding_strategy
     log.info("Before FSDP model wrapping")
@@ -359,7 +359,7 @@ def main(cfg: TrainConfig) -> None:
         # ignored_modules = set()
         # for name, module in olmo_model.transformer.named_modules():
         #     if isinstance(module, OLMoEBlock):
-        #         # module.ffn 即 dMoE 或 MoE 实例
+        # # module.ffn is a dMoE or MoE instance
         #         ignored_modules.add(module.ffn)
 
         fsdp_model = FSDP(

@@ -467,7 +467,7 @@ def validate_timestamps(source_folders, tolerance_s=1e-4):
 
     for folder in source_folders:
         try:
-            # 尝试从 info.json 获取 FPS (Try to get FPS from info.json)
+            # Try to get FPS from info.json (Try to get FPS from info.json)
             info_path = os.path.join(folder, "meta", "info.json")
             if os.path.exists(info_path):
                 with open(info_path) as f:
@@ -477,7 +477,7 @@ def validate_timestamps(source_folders, tolerance_s=1e-4):
                         fps_values.append(fps)
                         print(f"数据集 {folder} FPS={fps} (Dataset {folder} FPS={fps})")
 
-            # 检查是否有parquet文件包含时间戳 (Check if any parquet files contain timestamps)
+            # checkparquetfiletime (Check if any parquet files contain timestamps)
             parquet_path = None
             for root, _, files in os.walk(os.path.join(folder, "parquet")):
                 for file in files:
@@ -519,7 +519,7 @@ def validate_timestamps(source_folders, tolerance_s=1e-4):
             print(f"验证错误: {e} (Validation error: {e})")
             traceback.print_exc()
 
-    # 检查FPS是否一致 (Check if FPS values are consistent)
+    # Check whether FPS values are consistent (Check if FPS values are consistent)
     if len(set(fps_values)) > 1:
         issues.append(
             f"警告: 数据集FPS不一致: {fps_values} (Warning: Inconsistent FPS across datasets: {fps_values})"
@@ -532,8 +532,8 @@ def copy_data_files(
     source_folders,
     output_folder,
     episode_mapping,
-    state_max_dim=32,  # 默认状态向量维度为32
-    action_max_dim=32,  # 默认动作向量维度为32
+    state_max_dim=32,  # Default state vector dimension is 32
+    action_max_dim=32,  # Default action vector dimension is 32
     fps=None,
     episode_to_frame_index=None,
     folder_task_mapping=None,
@@ -558,7 +558,7 @@ def copy_data_files(
         chunks_size (int): 数据块大小 (Chunk size)
         default_fps (float): 默认帧率 (Default frame rate)
     """
-    # 获取第一个数据集的FPS（如果未提供）(Get FPS from first dataset if not provided)
+    # Get FPS from the first dataset if not provided(Get FPS from first dataset if not provided)
     if fps is None:
         info_path = os.path.join(source_folders[0], "meta", "info.json")
         if os.path.exists(info_path):
@@ -566,22 +566,22 @@ def copy_data_files(
                 info = json.load(f)
                 fps = info.get(
                     "fps", default_fps
-                )  # 使用变量替代硬编码的20 (Use variable instead of hardcoded 20)
+                )  # Use a variable instead of hardcoded 20 (Use variable instead of hardcoded 20)
         else:
-            fps = default_fps  # 使用变量替代硬编码的20 (Use variable instead of hardcoded 20)
+            fps = default_fps  # Use a variable instead of hardcoded 20 (Use variable instead of hardcoded 20)
 
     print(f"使用FPS={fps}")
 
-    # 为每个episode复制和处理数据文件 (Copy and process data files for each episode)
+    # Copy and process data files for each episode (Copy and process data files for each episode)
     total_copied = 0
     total_failed = 0
 
-    # 添加一个列表来记录失败的文件及原因
+    # Add a list to record failed files and reasons
     # (Add a list to record failed files and reasons)
     failed_files = []
 
     for i, (old_folder, old_index, new_index) in enumerate(episode_mapping):
-        # 尝试找到源parquet文件 (Try to find source parquet file)
+        # Try to find the source parquet file (Try to find source parquet file)
         episode_str = f"episode_{old_index:06d}.parquet"
         source_paths = [
             os.path.join(old_folder, "parquet", episode_str),
@@ -596,13 +596,13 @@ def copy_data_files(
 
         if source_path:
             try:
-                # 读取parquet文件 (Read parquet file)
+                # Read the parquet file (Read parquet file)
                 df = pd.read_parquet(source_path)
 
-                # 检查是否需要填充维度 - 为不同特征类型使用不同的最大维度
-                # 为状态向量填充
+                # Check whether dimension padding is needed; use different maximum dimensions for different feature types
+                # Pad the state vector
                 if "observation.state" in df.columns:
-                    # 检查第一个非空值 (Check first non-null value)
+                    # Check the first non-null value (Check first non-null value)
                     for _idx, value in enumerate(df["observation.state"]):
                         if value is not None and isinstance(value, (list, np.ndarray)):
                             current_dim = len(value)
@@ -611,7 +611,7 @@ def copy_data_files(
                                     f"填充状态向量从 {current_dim} 维到 {state_max_dim} 维"
                                     f" (Padding state vector from {current_dim} to {state_max_dim} dimensions)"
                                 )
-                                # 使用零填充到目标维度 (Pad with zeros to target dimension)
+                                # Pad with zeros to the target dimension (Pad with zeros to target dimension)
                                 df["observation.state"] = df["observation.state"].apply(
                                     lambda x: np.pad(x, (0, state_max_dim - len(x)), "constant").tolist()
                                     if x is not None
@@ -621,9 +621,9 @@ def copy_data_files(
                                 )
                             break
                 
-                # 为动作向量填充
+                # Pad the action vector
                 if "action" in df.columns:
-                    # 检查第一个非空值 (Check first non-null value)
+                    # Check the first non-null value (Check first non-null value)
                     for _idx, value in enumerate(df["action"]):
                         if value is not None and isinstance(value, (list, np.ndarray)):
                             current_dim = len(value)
@@ -632,7 +632,7 @@ def copy_data_files(
                                     f"填充动作向量从 {current_dim} 维到 {action_max_dim} 维"
                                     f" (Padding action vector from {current_dim} to {action_max_dim} dimensions)"
                                 )
-                                # 使用零填充到目标维度 (Pad with zeros to target dimension)
+                                # Pad with zeros to the target dimension (Pad with zeros to target dimension)
                                 df["action"] = df["action"].apply(
                                     lambda x: np.pad(x, (0, action_max_dim - len(x)), "constant").tolist()
                                     if x is not None
@@ -642,38 +642,38 @@ def copy_data_files(
                                 )
                             break
 
-                # 更新episode_index列 (Update episode_index column)
+                # Update the episode_index column (Update episode_index column)
                 if "episode_index" in df.columns:
                     print(
                         f"更新episode_index从 {df['episode_index'].iloc[0]} 到 {new_index} (Update episode_index from {df['episode_index'].iloc[0]} to {new_index})"
                     )
                     df["episode_index"] = new_index
 
-                # 更新index列 (Update index column)
+                # Update the index column (Update index column)
                 if "index" in df.columns:
                     if episode_to_frame_index and new_index in episode_to_frame_index:
-                        # 使用预先计算的帧索引起始值 (Use pre-calculated frame index start value)
+                        # Use the precomputed starting frame index (Use pre-calculated frame index start value)
                         first_index = episode_to_frame_index[new_index]
                         print(
                             f"更新index列，起始值: {first_index}（使用全局累积帧计数）(Update index column, start value: {first_index} (using global cumulative frame count))"
                         )
                     else:
-                        # 如果没有提供映射，使用当前的计算方式作为回退
+                        # If no mapping is provided, fall back to the current calculation
                         # (If no mapping provided, use current calculation as fallback)
                         first_index = new_index * len(df)
                         print(
                             f"更新index列，起始值: {first_index}（使用episode索引乘以长度）(Update index column, start value: {first_index} (using episode index multiplied by length))"
                         )
 
-                    # 更新所有帧的索引 (Update indices for all frames)
+                    # Update indices for all frames (Update indices for all frames)
                     df["index"] = [first_index + i for i in range(len(df))]
 
-                # 更新task_index列 (Update task_index column)
+                # Update the task_index column (Update task_index column)
                 if "task_index" in df.columns and folder_task_mapping and old_folder in folder_task_mapping:
-                    # 获取当前task_index (Get current task_index)
+                    # Get the current task_index (Get current task_index)
                     current_task_index = df["task_index"].iloc[0]
 
-                    # 检查是否有对应的新索引 (Check if there's a corresponding new index)
+                    # Check whether a corresponding new index exists (Check if there's a corresponding new index)
                     if current_task_index in folder_task_mapping[old_folder]:
                         new_task_index = folder_task_mapping[old_folder][current_task_index]
                         print(
@@ -685,17 +685,17 @@ def copy_data_files(
                             f"警告: 找不到task_index {current_task_index}的映射关系 (Warning: No mapping found for task_index {current_task_index})"
                         )
 
-                # 计算chunk编号 (Calculate chunk number)
+                # Calculate the chunk number (Calculate chunk number)
                 chunk_index = new_index // chunks_size
 
-                # 创建正确的目标目录 (Create correct target directory)
+                # Create the correct target directory (Create correct target directory)
                 chunk_dir = os.path.join(output_folder, "data", f"chunk-{chunk_index:03d}")
                 os.makedirs(chunk_dir, exist_ok=True)
 
-                # 构建正确的目标路径 (Build correct target path)
+                # Build the correct target path (Build correct target path)
                 dest_path = os.path.join(chunk_dir, f"episode_{new_index:06d}.parquet")
 
-                # 保存到正确位置 (Save to correct location)
+                # Save to the correct location (Save to correct location)
                 df.to_parquet(dest_path, index=False)
 
                 total_copied += 1
@@ -708,7 +708,7 @@ def copy_data_files(
                 failed_files.append({"file": source_path, "reason": str(e), "episode": old_index})
                 total_failed += 1
         else:
-            # 文件不在标准位置，尝试递归搜索
+            # File is not in the standard location; try recursive search
             found = False
             for root, _, files in os.walk(old_folder):
                 for file in files:
@@ -716,13 +716,13 @@ def copy_data_files(
                         try:
                             source_path = os.path.join(root, file)
 
-                            # 读取parquet文件 (Read parquet file)
+                            # Read the parquet file (Read parquet file)
                             df = pd.read_parquet(source_path)
 
-                            # 检查是否需要填充维度 - 为不同特征类型使用不同的最大维度
-                            # 为状态向量填充
+                            # Check whether dimension padding is needed; use different maximum dimensions for different feature types
+                            # Pad the state vector
                             if "observation.state" in df.columns:
-                                # 检查第一个非空值 (Check first non-null value)
+                                # Check the first non-null value (Check first non-null value)
                                 for _idx, value in enumerate(df["observation.state"]):
                                     if value is not None and isinstance(value, (list, np.ndarray)):
                                         current_dim = len(value)
@@ -731,7 +731,7 @@ def copy_data_files(
                                                 f"填充状态向量从 {current_dim} 维到 {state_max_dim} 维"
                                                 f" (Padding state vector from {current_dim} to {state_max_dim} dimensions)"
                                             )
-                                            # 使用零填充到目标维度 (Pad with zeros to target dimension)
+                                            # Pad with zeros to the target dimension (Pad with zeros to target dimension)
                                             df["observation.state"] = df["observation.state"].apply(
                                                 lambda x: np.pad(x, (0, state_max_dim - len(x)), "constant").tolist()
                                                 if x is not None
@@ -741,9 +741,9 @@ def copy_data_files(
                                             )
                                         break
                             
-                            # 为动作向量填充
+                            # Pad the action vector
                             if "action" in df.columns:
-                                # 检查第一个非空值 (Check first non-null value)
+                                # Check the first non-null value (Check first non-null value)
                                 for _idx, value in enumerate(df["action"]):
                                     if value is not None and isinstance(value, (list, np.ndarray)):
                                         current_dim = len(value)
@@ -752,7 +752,7 @@ def copy_data_files(
                                                 f"填充动作向量从 {current_dim} 维到 {action_max_dim} 维"
                                                 f" (Padding action vector from {current_dim} to {action_max_dim} dimensions)"
                                             )
-                                            # 使用零填充到目标维度 (Pad with zeros to target dimension)
+                                            # Pad with zeros to the target dimension (Pad with zeros to target dimension)
                                             df["action"] = df["action"].apply(
                                                 lambda x: np.pad(x, (0, action_max_dim - len(x)), "constant").tolist()
                                                 if x is not None
@@ -762,42 +762,42 @@ def copy_data_files(
                                             )
                                         break
 
-                            # 更新episode_index列 (Update episode_index column)
+                            # Update the episode_index column (Update episode_index column)
                             if "episode_index" in df.columns:
                                 print(
                                     f"更新episode_index从 {df['episode_index'].iloc[0]} 到 {new_index} (Update episode_index from {df['episode_index'].iloc[0]} to {new_index})"
                                 )
                                 df["episode_index"] = new_index
 
-                            # 更新index列 (Update index column)
+                            # Update the index column (Update index column)
                             if "index" in df.columns:
                                 if episode_to_frame_index and new_index in episode_to_frame_index:
-                                    # 使用预先计算的帧索引起始值 (Use pre-calculated frame index start value)
+                                    # Use the precomputed starting frame index (Use pre-calculated frame index start value)
                                     first_index = episode_to_frame_index[new_index]
                                     print(
                                         f"更新index列，起始值: {first_index}（使用全局累积帧计数）(Update index column, start value: {first_index} (using global cumulative frame count))"
                                     )
                                 else:
-                                    # 如果没有提供映射，使用当前的计算方式作为回退
+                                    # If no mapping is provided, fall back to the current calculation
                                     # (If no mapping provided, use current calculation as fallback)
                                     first_index = new_index * len(df)
                                     print(
                                         f"更新index列，起始值: {first_index}（使用episode索引乘以长度）(Update index column, start value: {first_index} (using episode index multiplied by length))"
                                     )
 
-                                # 更新所有帧的索引 (Update indices for all frames)
+                                # Update indices for all frames (Update indices for all frames)
                                 df["index"] = [first_index + i for i in range(len(df))]
 
-                            # 更新task_index列 (Update task_index column)
+                            # Update the task_index column (Update task_index column)
                             if (
                                 "task_index" in df.columns
                                 and folder_task_mapping
                                 and old_folder in folder_task_mapping
                             ):
-                                # 获取当前task_index (Get current task_index)
+                                # Get the current task_index (Get current task_index)
                                 current_task_index = df["task_index"].iloc[0]
 
-                                # 检查是否有对应的新索引 (Check if there's a corresponding new index)
+                                # Check whether a corresponding new index exists (Check if there's a corresponding new index)
                                 if current_task_index in folder_task_mapping[old_folder]:
                                     new_task_index = folder_task_mapping[old_folder][current_task_index]
                                     print(
@@ -809,17 +809,17 @@ def copy_data_files(
                                         f"警告: 找不到task_index {current_task_index}的映射关系 (Warning: No mapping found for task_index {current_task_index})"
                                     )
 
-                            # 计算chunk编号 (Calculate chunk number)
+                            # Calculate the chunk number (Calculate chunk number)
                             chunk_index = new_index // chunks_size
 
-                            # 创建正确的目标目录 (Create correct target directory)
+                            # Create the correct target directory (Create correct target directory)
                             chunk_dir = os.path.join(output_folder, "data", f"chunk-{chunk_index:03d}")
                             os.makedirs(chunk_dir, exist_ok=True)
 
-                            # 构建正确的目标路径 (Build correct target path)
+                            # Build the correct target path (Build correct target path)
                             dest_path = os.path.join(chunk_dir, f"episode_{new_index:06d}.parquet")
 
-                            # 保存到正确位置 (Save to correct location)
+                            # Save to the correct location (Save to correct location)
                             df.to_parquet(dest_path, index=False)
 
                             total_copied += 1
@@ -845,7 +845,7 @@ def copy_data_files(
 
     print(f"共复制 {total_copied} 个数据文件，{total_failed} 个失败")
 
-    # 打印所有失败的文件详情 (Print details of all failed files)
+    # Print details for all failed files (Print details of all failed files)
     if failed_files:
         print("\n失败的文件详情 (Details of failed files):")
         for i, failed in enumerate(failed_files):
@@ -871,57 +871,57 @@ def pad_parquet_data(source_path, target_path, original_dim=14, target_dim=18):
         original_dim (int): 原始向量维度 (Original vector dimension)
         target_dim (int): 目标向量维度 (Target vector dimension)
     """
-    # 读取parquet文件
+    # Read the parquet file
     df = pd.read_parquet(source_path)
 
-    # 打印列名以便调试
+    # Print column names for debugging
     print(f"Columns in {source_path}: {df.columns.tolist()}")
 
-    # 创建新的DataFrame来存储填充后的数据
+    # Create a new DataFrame to store padded data
     new_df = df.copy()
 
-    # 检查observation.state和action列是否存在
+    # Check whether observation.state and action columns exist
     if "observation.state" in df.columns:
-        # 检查第一行数据，确认是否为向量
+        # Check the first row to confirm whether it is a vector
         first_state = df["observation.state"].iloc[0]
         print(f"First observation.state type: {type(first_state)}, value: {first_state}")
 
-        # 如果是向量（列表或numpy数组）
+        # If it is a vector, either a list or NumPy array
         if isinstance(first_state, (list, np.ndarray)):
-            # 检查维度
+            # Check dimensions
             state_dim = len(first_state)
             print(f"observation.state dimension: {state_dim}")
 
             if state_dim < target_dim:
-                # 填充向量
+                # Pad the vector
                 print(f"Padding observation.state from {state_dim} to {target_dim} dimensions")
                 new_df["observation.state"] = df["observation.state"].apply(
                     lambda x: np.pad(x, (0, target_dim - len(x)), "constant").tolist()
                 )
 
-    # 同样处理action列
+    # Process the action column the same way
     if "action" in df.columns:
-        # 检查第一行数据
+        # checkrowdata
         first_action = df["action"].iloc[0]
         print(f"First action type: {type(first_action)}, value: {first_action}")
 
-        # 如果是向量
+        # If it is a vector
         if isinstance(first_action, (list, np.ndarray)):
-            # 检查维度
+            # Check dimensions
             action_dim = len(first_action)
             print(f"action dimension: {action_dim}")
 
             if action_dim < target_dim:
-                # 填充向量
+                # Pad the vector
                 print(f"Padding action from {action_dim} to {target_dim} dimensions")
                 new_df["action"] = df["action"].apply(
                     lambda x: np.pad(x, (0, target_dim - len(x)), "constant").tolist()
                 )
 
-    # 确保目标目录存在
+    # Ensure the target directory exists
     os.makedirs(os.path.dirname(target_path), exist_ok=True)
 
-    # 保存到新的parquet文件
+    # Save to the new parquet file
     new_df.to_parquet(target_path, index=False)
 
     print(f"已将{source_path}处理并保存到{target_path}")
@@ -1283,39 +1283,39 @@ def merge_datasets(
     all_stats_data = []
 
     # Track dimensions for each folder
-    folder_state_dimensions = {}  # 存储每个文件夹的状态向量维度
-    folder_action_dimensions = {}  # 存储每个文件夹的动作向量维度
+    folder_state_dimensions = {}  # folder statevectordimension
+    folder_action_dimensions = {}  # folder actionvectordimension
 
-    # 添加一个变量来跟踪累积的帧数
+    # Add a variable to track accumulated frame count
     cumulative_frame_count = 0
 
-    # 创建一个映射，用于存储每个新的episode索引对应的起始帧索引
+    # Create a mapping from each new episode index to its starting frame index
     episode_to_frame_index = {}
 
-    # 创建一个映射，用于跟踪旧的任务描述到新任务索引的映射
+    # create, use Task descriptiontotaskindex
     task_desc_to_new_index = {}
-    # 创建一个映射，用于存储每个源文件夹和旧任务索引到新任务索引的映射
+    # create, usefolderandtaskindextotaskindex
     folder_task_mapping = {}
 
-    # 首先收集所有不同的任务描述
+    # firstall Task description
     all_unique_tasks = []
 
-    # 从info.json获取chunks_size
+    # Get chunks_size from info.json
     info_path = os.path.join(source_folders[0], "meta", "info.json")
     # Check if all source folders have images directory
     images_dir_exists = all(os.path.exists(os.path.join(folder, "images")) for folder in source_folders)
-    chunks_size = 1000  # 默认值
+    chunks_size = 1000  # Default value
     if os.path.exists(info_path):
         with open(info_path) as f:
             info = json.load(f)
             chunks_size = info.get("chunks_size", 1000)
 
-    # 使用更简单的方法计算视频总数 (Use simpler method to calculate total videos)
+    # Use a simpler method to calculate the total number of videos (Use simpler method to calculate total videos)
     total_videos = 0
 
     for folder in source_folders:
         try:
-            # 从每个数据集的info.json直接获取total_videos
+            # Get total_videos directly from each dataset info.json
             # (Get total_videos directly from each dataset's info.json)
             folder_info_path = os.path.join(folder, "meta", "info.json")
             if os.path.exists(folder_info_path):
@@ -1328,9 +1328,9 @@ def merge_datasets(
                             f"从{folder}的info.json中读取到视频数量: {folder_videos} (Read video count from {folder}'s info.json: {folder_videos})"
                         )
 
-            # 分别检查状态和动作向量的维度
-            folder_state_dim = state_max_dim  # 默认使用传入的状态最大维度
-            folder_action_dim = action_max_dim  # 默认使用传入的动作最大维度
+            # Check state and action vector dimensions separately
+            folder_state_dim = state_max_dim  # Default to the provided maximum state dimension
+            folder_action_dim = action_max_dim  # Default to the provided maximum action dimension
 
             # Try to find a parquet file to determine dimensions
             for root, _dirs, files in os.walk(folder):
@@ -1338,7 +1338,7 @@ def merge_datasets(
                     if file.endswith(".parquet"):
                         try:
                             df = pd.read_parquet(os.path.join(root, file))
-                            # 检查状态向量维度
+                            # Check state-vector dimension
                             if "observation.state" in df.columns:
                                 for state_val in df["observation.state"]:
                                     if state_val is not None and isinstance(state_val, (list, np.ndarray)):
@@ -1346,7 +1346,7 @@ def merge_datasets(
                                         print(f"Detected {folder_state_dim} dimensions for state in {folder}")
                                         break
                             
-                            # 检查动作向量维度
+                            # Check action-vector dimension
                             if "action" in df.columns:
                                 for action_val in df["action"]:
                                     if action_val is not None and isinstance(action_val, (list, np.ndarray)):
@@ -1354,13 +1354,13 @@ def merge_datasets(
                                         print(f"Detected {folder_action_dim} dimensions for action in {folder}")
                                         break
                                         
-                            # 如果两个维度都已检测到，可以停止搜索
+                            # If both dimensions have been detected, stop searching
                             if folder_state_dim != state_max_dim and folder_action_dim != action_max_dim:
                                 break
                         except Exception as e:
                             print(f"Error checking dimensions in {folder}: {e}")
                         break
-                # 如果两个维度都已检测到，可以停止搜索
+                # If both dimensions have been detected, stop searching
                 if folder_state_dim != state_max_dim and folder_action_dim != action_max_dim:
                     break
 
@@ -1393,22 +1393,22 @@ def merge_datasets(
             if os.path.exists(tasks_path):
                 folder_tasks = load_jsonl(tasks_path)
 
-            # 创建此文件夹的任务映射
+            # createfolder task
             folder_task_mapping[folder] = {}
 
-            # 处理每个任务
+            # Process each task
             for task in folder_tasks:
                 task_desc = task["task"]
                 old_index = task["task_index"]
 
-                # 检查任务描述是否已存在
+                # checkTask descriptionin
                 if task_desc not in task_desc_to_new_index:
-                    # 添加新任务描述，分配新索引
+                    # addTask description, index
                     new_index = len(all_unique_tasks)
                     task_desc_to_new_index[task_desc] = new_index
                     all_unique_tasks.append({"task_index": new_index, "task": task_desc})
 
-                # 保存此文件夹中旧索引到新索引的映射
+                # savefolderinindextoindex
                 folder_task_mapping[folder][old_index] = task_desc_to_new_index[task_desc]
 
             # Process all episodes from this folder
@@ -1425,9 +1425,9 @@ def merge_datasets(
                     stats = stats_map[old_index]
                     stats["episode_index"] = new_index
 
-                    # 填充统计数据
+                    # Pad statistics
                     if "stats" in stats:
-                        # 分别填充observation.state的统计数据
+                        # Pad observation.state statistics separately
                         if "observation.state" in stats["stats"] and folder_state_dimensions[folder] < state_max_dim:
                             for stat_type in ["mean", "std", "max", "min"]:
                                 if stat_type in stats["stats"]["observation.state"]:
@@ -1436,7 +1436,7 @@ def merge_datasets(
                                         padded = values + [0.0] * (state_max_dim - len(values))
                                         stats["stats"]["observation.state"][stat_type] = padded
                         
-                        # 分别处理action的统计数据
+                        # Process action statistics separately
                         if "action" in stats["stats"] and folder_action_dimensions[folder] < action_max_dim:
                             for stat_type in ["mean", "std", "max", "min"]:
                                 if stat_type in stats["stats"]["action"]:
@@ -1458,11 +1458,11 @@ def merge_datasets(
                 total_episodes += 1
                 total_frames += episode["length"]
 
-                # 处理每个episode时收集此信息
+                # Collect this information while processing each episode
                 episode_to_frame_index[new_index] = cumulative_frame_count
                 cumulative_frame_count += episode["length"]
 
-            # 使用收集的唯一任务列表替换之前的任务处理逻辑
+            # Replace the previous task-processing logic with the collected unique task list
             all_tasks = all_unique_tasks
 
         except Exception as e:
@@ -1611,7 +1611,7 @@ def merge_datasets(
 
     # Update feature dimensions to the maximum dimension
     if "features" in info:
-        # 使用检测到的最大状态和动作维度
+        # Use the detected maximum state and action dimensions
         actual_state_max_dim = state_max_dim
         actual_action_max_dim = action_max_dim
         
@@ -1621,17 +1621,17 @@ def merge_datasets(
         for _folder, dim in folder_action_dimensions.items():
             actual_action_max_dim = max(actual_action_max_dim, dim)
         
-        # 更新状态向量维度
+        # Update state-vector dimension
         if "observation.state" in info["features"] and "shape" in info["features"]["observation.state"]:
             info["features"]["observation.state"]["shape"] = [actual_state_max_dim]
             print(f"Updated observation.state shape to {actual_state_max_dim}")
             
-        # 更新动作向量维度
+        # Update action-vector dimension
         if "action" in info["features"] and "shape" in info["features"]["action"]:
             info["features"]["action"]["shape"] = [actual_action_max_dim]
             print(f"Updated action shape to {actual_action_max_dim}")
 
-    # 更新视频总数 (Update total videos)
+    # Update total videos (Update total videos)
     info["total_videos"] = total_videos
     print(f"更新视频总数为: {total_videos} (Update total videos to: {total_videos})")
 

@@ -183,13 +183,13 @@ def visualize_dataset(
     repo_id = dataset.repo_id
 
 
-    # 从 meta.info 中拿出各维度的名字（如果有）
+    # from meta.info indimension (if)
     state_names = None
     action_names = None
-    # 存储所有字段的 names 信息，用于可视化
+    # all names , use
     field_names = {}
     try:
-        feats = dataset.features  # 即 info["features"]
+        feats = dataset.features  # info["features"]
         if "observation.state" in feats:
             state_names = feats["observation.state"].get("names")
             if "motors" in state_names:
@@ -199,19 +199,19 @@ def visualize_dataset(
             if "motors" in action_names:
                 action_names = action_names["motors"]
         
-        # 为所有字段提取 names 信息
+        # asallextract names
         for key, feat in feats.items():
             if feat.get("dtype") in ["video", "image"]:
-                continue  # 跳过图像/视频字段
+                continue  # skipImage/video
             names = feat.get("names")
             if names is not None:
-                # 处理嵌套的 names 结构（如 {"motors": [...]}）
+                # process names ( {"motors": [...]})
                 if isinstance(names, dict) and "motors" in names:
                     field_names[key] = names["motors"]
                 elif isinstance(names, list):
                     field_names[key] = names
     except Exception:
-        # 出现异常时退回到原来的 index 写法
+        # to index
         state_names = None
         action_names = None
         field_names = {}
@@ -313,20 +313,20 @@ def visualize_dataset(
                 if next_success_val is not None:
                     rr.log("next.success", rr.Scalar(next_success_val.item()))
 
-            # 可视化所有其他字段（除了已经处理的相机图像、action、observation.state、done、reward等）
-            # 需要跳过的字段
+            # all(process cameraImage, action, observation.state, done, reward)
+            # skip
             skip_keys = {
                 ACTION, OBS_STATE, DONE, REWARD, "next.success",
                 "index", "episode_index", "frame_index", "timestamp", "task_index"
             }
-            skip_keys.update(dataset.meta.camera_keys)  # 跳过所有相机图像字段
+            skip_keys.update(dataset.meta.camera_keys)  # skipallcameraImage
             
-            # 遍历所有 features 中的字段
+            # iterateall features in
             for key in dataset.features:
                 if key in skip_keys:
                     continue
                 
-                # 如果 batch 中没有这个字段，跳过
+                # if batch in, skip
                 if key not in batch:
                     continue
                 
@@ -336,17 +336,17 @@ def visualize_dataset(
                     dtype = feat.get("dtype", "")
                     shape = feat.get("shape", [])
                     
-                    # 跳过视频和图像字段（已经处理过）
+                    # skipvideoandImage(process)
                     if dtype in ["video", "image"]:
                         continue
                     
-                    # 处理标量值
+                    # processvalue
                     if isinstance(value, torch.Tensor):
                         if value.numel() == 1:
-                            # 标量
+                            # Translated comment
                             rr.log(key, rr.Scalar(value.item()))
                         elif value.ndim == 1:
-                            # 1D 数组，按维度记录
+                            # 1D , bydimension
                             names = field_names.get(key)
                             for dim_idx, val in enumerate(value):
                                 if names is not None and dim_idx < len(names):
@@ -355,17 +355,17 @@ def visualize_dataset(
                                 else:
                                     rr.log(f"{key}/{dim_idx}", rr.Scalar(val.item()))
                         elif value.ndim == 2:
-                            # 2D 数组，按行和列记录
+                            # 2D , byrowandcolumn
                             names = field_names.get(key)
-                            # 检查原始 features 中的 names 结构
+                            # check features in names
                             feat_names = feat.get("names")
                             for row_idx in range(value.shape[0]):
                                 row_name = None
-                                # 尝试从 names 中获取行名称
+                                # from names ingetrowname
                                 if names is not None and isinstance(names, list) and row_idx < len(names):
                                     row_name = names[row_idx]
                                 elif feat_names is not None:
-                                    # 处理 {"motors": [...]} 这种结构
+                                    # process {"motors": [...]}
                                     if isinstance(feat_names, dict) and "motors" in feat_names:
                                         motors = feat_names["motors"]
                                         if isinstance(motors, list) and row_idx < len(motors):
@@ -374,21 +374,21 @@ def visualize_dataset(
                                 for col_idx in range(value.shape[1]):
                                     val = value[row_idx, col_idx]
                                     if row_name is not None:
-                                        # 使用行名称和列索引
+                                        # userownameandcolumnindex
                                         rr.log(f"{key}/{row_name}/{col_idx}", rr.Scalar(val.item()))
                                     else:
-                                        # 默认使用索引
+                                        # defaultuseindex
                                         rr.log(f"{key}/{row_idx}/{col_idx}", rr.Scalar(val.item()))
                         else:
-                            # 更高维的数组，展平处理
+                            # , process
                             flat_value = value.flatten()
                             for dim_idx, val in enumerate(flat_value):
                                 rr.log(f"{key}/{dim_idx}", rr.Scalar(val.item()))
                     elif isinstance(value, (int, float)):
-                        # Python 原生标量
+                        # Python
                         rr.log(key, rr.Scalar(float(value)))
                 except Exception as e:
-                    # 如果某个字段处理失败，记录警告但继续处理其他字段
+                    # ifprocess, process
                     logging.warning(f"Failed to visualize field '{key}': {e}")
                     continue
 

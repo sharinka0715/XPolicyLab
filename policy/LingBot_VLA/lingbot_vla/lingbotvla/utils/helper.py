@@ -244,7 +244,7 @@ def print_device_mem_info(prompt: str = "VRAM usage") -> None:
 
 
 def print_cpu_memory_info():
-    cpu_usage = psutil.cpu_percent(interval=1)  # 1 秒间隔
+    cpu_usage = psutil.cpu_percent(interval=1)  # 1-second interval
     logger.info_rank0(f"CPU Usage: {cpu_usage}%")
 
     memory_info = psutil.virtual_memory()

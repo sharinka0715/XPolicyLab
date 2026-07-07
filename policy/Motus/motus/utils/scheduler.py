@@ -124,7 +124,7 @@ def create_scheduler(optimizer, config):
             f_start=getattr(config.training, 'f_start', 1e-6)
         )
     elif scheduler_type == "cosine":
-        # 保持向后兼容：原生PyTorch余弦（带min比例）
+        # Keep backward compatibility: native PyTorch cosine with min ratio
         T_max = getattr(config.training, 'max_steps', 10000)
         eta_min = float(getattr(config.training, 'min_lr', config.training.learning_rate * getattr(config.training, 'min_lr_ratio', 0.1)))
         return torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -133,7 +133,7 @@ def create_scheduler(optimizer, config):
             eta_min=eta_min
         )
     elif scheduler_type == "diffusers_cosine":
-        # 使用 diffusers.optimization.get_scheduler 的余弦调度
+        # Use cosine scheduling from diffusers.optimization.get_scheduler
         total_steps = int(getattr(config.training, 'lr_schedule_steps', getattr(config.training, 'max_steps', 10000)))
         warmup_steps = int(getattr(config.training, 'warmup_steps', 0))
         base = float(config.training.learning_rate)
@@ -165,7 +165,7 @@ def create_scheduler(optimizer, config):
                 except Exception:
                     return [g['lr'] for g in self.optimizer.param_groups]
 
-            # 兼容 accelerate.save_state / load_state
+            # Support accelerate.save_state / load_state
             def state_dict(self):
                 sd = getattr(self.inner, 'state_dict', None)
                 return sd() if callable(sd) else {}

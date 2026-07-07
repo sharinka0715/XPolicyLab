@@ -92,14 +92,14 @@ class LeRobot_Selective_Dataset(LeRobotDataset):
         self.features_to_load = features_to_load
         self._loaded_features: Optional[dict] = None  # Set in load_hf_dataset()
         
-        # 先初始化父类以获取 meta（包含 fps 信息）
-        # 但我们需要在 __init__ 之前设置 delta_timestamps
-        # 所以先创建一个临时对象来获取 fps，或者使用传入的 fps
-        # 如果 fps 未指定，我们会在 super().__init__ 后从 meta 获取并更新
+        # Initialize the parent class first to get meta, including fps information
+        # But delta_timestamps must be set before __init__
+        # firstcreateforget fps, oruse fps
+        # If fps is not specified, get it from meta after super().__init__ and update it
         self._action_horizon = action_horizon
         self._fps_param = _resolve_dataset_fps(repo_id, fps)
         
-        # 计算 delta_timestamps
+        # Compute delta_timestamps
         delta_seconds = [i / self._fps_param for i in range(action_horizon)]
         self.delta_timestamps = {"action": delta_seconds}
         
@@ -386,9 +386,9 @@ class LeRobot_Dataset(Dataset):
         # get final image in numpy array
         images = [image]
         
-        # normalize state: 只对前14位进行归一化，但跳过索引6和索引13，最后两位（索引14、15）不归一化
-        # 需要归一化的索引: 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12 (共12位)
-        # 不归一化的索引: 6, 13, 14, 15 (共4位)
+        # normalize state: normalize only the first 14 dims, skip indices 6 and 13, and leave the last two dims (14, 15) unnormalized
+        # Indices to normalize: 0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12 (12)
+        # Indices not to normalize: 6, 13, 14, 15 (4)
         state_full = sample["observation.state"]  # shape: (16,)
         if not isinstance(state_full, torch.Tensor):
             state_full = torch.tensor(state_full)
@@ -396,10 +396,10 @@ class LeRobot_Dataset(Dataset):
         
         # Create mask for dimensions to normalize: [0,1,2,3,4,5,7,8,9,10,11,12] = True, others = False
         state_normalize_mask = torch.ones(16, dtype=torch.bool)
-        state_normalize_mask[6] = False   # 索引6不归一化
-        state_normalize_mask[13] = False  # 索引13不归一化
-        state_normalize_mask[14] = False  # 索引14不归一化
-        state_normalize_mask[15] = False  # 索引15不归一化
+        state_normalize_mask[6] = False   # Do not normalize index 6
+        state_normalize_mask[13] = False  # Do not normalize index 13
+        state_normalize_mask[14] = False  # Do not normalize index 14
+        state_normalize_mask[15] = False  # Do not normalize index 15
         
         # Initialize normalized state with original values
         state_normalized = state_full.clone()
@@ -422,8 +422,8 @@ class LeRobot_Dataset(Dataset):
             # shape: (1, 16)
             state_normalized = state_normalized.reshape(1, -1)
             
-        # normalize action: 只对前14位进行归一化，但跳过索引6和索引13，最后两位（索引14、15）不归一化
-        # 对每个action的16维分别应用相同的归一化规则
+        # normalize action: normalize only the first 14 dims, skip indices 6 and 13, and leave the last two dims (14, 15) unnormalized
+        # Apply the same normalization rules to each action vector's 16 dimensions
         action_full = sample["action"]  # shape: (16, 16)
         if not isinstance(action_full, torch.Tensor):
             action_full = torch.tensor(action_full)
@@ -431,10 +431,10 @@ class LeRobot_Dataset(Dataset):
         
         # Create mask for dimensions to normalize (same as state)
         action_normalize_mask = torch.ones(16, dtype=torch.bool)
-        action_normalize_mask[6] = False   # 索引6不归一化
-        action_normalize_mask[13] = False  # 索引13不归一化
-        action_normalize_mask[14] = False  # 索引14不归一化
-        action_normalize_mask[15] = False  # 索引15不归一化
+        action_normalize_mask[6] = False   # Do not normalize index 6
+        action_normalize_mask[13] = False  # Do not normalize index 13
+        action_normalize_mask[14] = False  # Do not normalize index 14
+        action_normalize_mask[15] = False  # Do not normalize index 15
         
         # Initialize normalized action with original values
         action_normalized = action_full.clone()
@@ -477,8 +477,8 @@ class LeRobot_Dataset(Dataset):
         return {
             "image": images,  # List[PIL.Image]
             "lang": subtask,  # str
-            "action": action_normalized,  # torch.Tensor (action_horizon, action_dim) = (16, 16), 全部16维quantile归一化到[-1, 1]
-            "state": state_normalized,  # torch.Tensor (1, 16), 全部16维quantile归一化到[-1, 1]
+            "action": action_normalized,  # torch.Tensor (action_horizon, action_dim) = (16, 16), all 16 dims are quantile-normalized to [-1, 1]
+            "state": state_normalized,  # torch.Tensor (1, 16), all 16 dims are quantile-normalized to [-1, 1]
             "episode_id": int(episode_id) if isinstance(episode_id, torch.Tensor) else episode_id,  # int
             "episode_pos": frame_index,  # offset within episode
             "global_idx": global_idx,  # global sample index

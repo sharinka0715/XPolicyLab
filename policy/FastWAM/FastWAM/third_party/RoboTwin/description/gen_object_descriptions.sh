@@ -1,21 +1,21 @@
 #!/bin/bash
 
-# 获取传入的参数
+# get parameter
 object_name=${1}
 object_id=${2}
 
-# 检查是否提供了足够的参数
+# check parameter
 if [ -z "$object_name" ]; then
     echo "Error: object_name is required."
     echo "Usage: $0 <object_name> [object_id]"
     exit 1
 fi
 
-# 检查 object_id 是否为空
+# check object_id as
 if [ -z "$object_id" ]; then
-    # 如果 object_id 为空，传递一个空字符串
+    # if object_id as,
     python utils/generate_object_description.py "$object_name" 
 else
-    # 如果 object_id 不为空，正常传递
+    # if object_id as,
     python utils/generate_object_description.py "$object_name" --index "$object_id"
 fi

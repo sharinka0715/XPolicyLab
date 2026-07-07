@@ -81,14 +81,14 @@ class LeRobot_Selective_Dataset(LeRobotDataset):
         self.features_to_load = features_to_load
         self._loaded_features: Optional[dict] = None  # Set in load_hf_dataset()
         
-        # 先初始化父类以获取 meta（包含 fps 信息）
-        # 但我们需要在 __init__ 之前设置 delta_timestamps
-        # 所以先创建一个临时对象来获取 fps，或者使用传入的 fps
-        # 如果 fps 未指定，我们会在 super().__init__ 后从 meta 获取并更新
+        # Initialize the parent class first to get meta, including fps information
+        # But delta_timestamps must be set before __init__
+        # firstcreateforget fps, oruse fps
+        # If fps is not specified, get it from meta after super().__init__ and update it
         self._action_horizon = action_horizon
         self._fps_param = fps
         
-        # 计算 delta_timestamps
+        # Compute delta_timestamps
         delta_seconds = [i / fps for i in range(action_horizon)]
         self.delta_timestamps = {"action": delta_seconds}
         
@@ -345,7 +345,7 @@ class LeRobot_Dataset(Dataset):
         # get final image in numpy array
         images = [image]
         
-        # normalize state: 前14位归一化，后2位保留原值
+        # normalize state: normalize the first 14 dims and keep the last 2 unchanged
         state_full = sample["observation.state"]  # shape: (16,)
         if not isinstance(state_full, torch.Tensor):
             state_full = torch.tensor(state_full)
@@ -354,7 +354,7 @@ class LeRobot_Dataset(Dataset):
         state_original = state_full[14:]  # shape: (2,)
         state = torch.cat([state_normalized, state_original]).reshape(1, -1)  # shape: (1, 16)
         
-        # normalize action: 前14位归一化，后2位保留原值
+        # normalize action: normalize the first 14 dims and keep the last 2 unchanged
         # sample["action"] shape: (action_horizon, action_dim) = (16, 16)
         # action_mean/action_std shape: (action_dim,) = (16,)
         action_full = sample["action"]  # shape: (16, 16)
@@ -387,8 +387,8 @@ class LeRobot_Dataset(Dataset):
         return {
             "image": images,  # List[PIL.Image]
             "lang": subtask,  # str
-            "action": action,  # torch.Tensor (action_horizon, action_dim) = (16, 16), 全部16维quantile归一化到[-1, 1]
-            "state": state,  # torch.Tensor (1, 16), 全部16维quantile归一化到[-1, 1]
+            "action": action,  # torch.Tensor (action_horizon, action_dim) = (16, 16), all 16 dims are quantile-normalized to [-1, 1]
+            "state": state,  # torch.Tensor (1, 16), all 16 dims are quantile-normalized to [-1, 1]
             "episode_id": int(episode_id) if isinstance(episode_id, torch.Tensor) else episode_id,  # int
             "episode_pos": frame_index,  # offset within episode
             "global_idx": global_idx,  # global sample index

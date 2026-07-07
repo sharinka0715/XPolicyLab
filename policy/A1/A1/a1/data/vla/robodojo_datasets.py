@@ -22,7 +22,7 @@
 动作空间（与现有 maniparena joint_delta 配方一致，delta_mask=[6,-1,6,-1]）：
 
     joint: [左臂6 | 左爪1 | 右臂6 | 右爪1]  共 14 维
-    ee   : [左ee_pose7 | 左爪1 | 右ee_pose7 | 右爪1] 共 16 维（由 state/*_ee_poses 构建）
+    ee   : [left ee_pose7 | left gripper1 | right ee_pose7 | right gripper1], 16-D total, built from state/*_ee_poses
 
 本读取器为 map-style `Dataset`，被 `IterableDatasetWrapper` 包一层后随机访问。
 为兼容多 worker（fork/spawn）与避免 h5py 句柄跨进程问题，初始化时只读取每个
@@ -47,7 +47,7 @@ from a1.data.vla.maniparena_datasets import normalize_action_and_proprio, make_b
 log = logging.getLogger(__name__)
 
 
-# 关节动作各分段在 action/state 组中的字段顺序（拼接后即 14 维向量）
+# actionin action/state in Order(after 14 vector)
 _JOINT_FIELDS = [
     "left_arm_joint_states",   # 6
     "left_ee_joint_states",    # 1
@@ -55,7 +55,7 @@ _JOINT_FIELDS = [
     "right_ee_joint_states",   # 1
 ]
 
-# 默认相机顺序：主相机(head) + 左右腕部相机
+# defaultcameraOrder: camera(head) + camera
 _DEFAULT_CAMERA_KEYS = ["cam_head", "cam_left_wrist", "cam_right_wrist"]
 
 
@@ -65,10 +65,10 @@ def _decode_jpeg(raw) -> np.ndarray:
     try:
         img = Image.open(io.BytesIO(b)).convert("RGB")
     except Exception:
-        # 个别帧可能带尾部填充，去掉再试一次
+        # framepad, then
         img = Image.open(io.BytesIO(b.rstrip(b"\x00"))).convert("RGB")
-    # 用 np.array（而非 np.asarray）强制拷贝成可写数组，避免下游 torch.from_numpy
-    # 对只读数组发出 "NumPy array is not writable" 警告（仅警告，无功能影响）。
+    # use np.array( np.asarray), avoidunder torch.from_numpy
+    # foronly "NumPy array is not writable" (only, ).
     return np.array(img, dtype=np.uint8)
 
 
@@ -117,7 +117,7 @@ class RoboDojoDatasetReader(Dataset):
         else:
             self.norm_stats = None
 
-        # 发现 episode 文件
+        # episode file
         data_dir = self._resolve_data_dir(dataset_path)
         files = sorted(glob.glob(os.path.join(data_dir, "episode_*.hdf5")))
         if num_episodes is not None:
@@ -125,7 +125,7 @@ class RoboDojoDatasetReader(Dataset):
         if not files:
             raise FileNotFoundError(f"在 {data_dir} 下未找到 episode_*.hdf5")
 
-        # 仅读取每条 episode 的帧数与指令，构建 (episode_idx, frame_idx) 索引
+        # onlyread episode frameand, (episode_idx, frame_idx) index
         self._episodes: List[Dict] = []
         self._index: List[tuple] = []
         for ep_i, fp in enumerate(files):
@@ -134,7 +134,7 @@ class RoboDojoDatasetReader(Dataset):
                     T = int(f["action/left_arm_joint_states"].shape[0])
                     instr = f["instruction"][()]
                     instr = instr.decode() if isinstance(instr, (bytes, bytearray, np.bytes_)) else str(instr)
-            except Exception as e:  # 跳过损坏文件
+            except Exception as e:  # skipfile
                 log.warning(f"跳过无法读取的 episode {fp}: {e}")
                 continue
             if T <= 1:
@@ -162,7 +162,7 @@ class RoboDojoDatasetReader(Dataset):
         for c in cand:
             if os.path.isdir(c) and glob.glob(os.path.join(c, "episode_*.hdf5")):
                 return c
-        # 兜底：自动在两层内搜索包含 episode_*.hdf5 的目录
+        # : in episode_*.hdf5 directory
         for c in cand:
             if os.path.isdir(c):
                 hits = glob.glob(os.path.join(c, "**", "episode_*.hdf5"), recursive=True)
@@ -170,7 +170,7 @@ class RoboDojoDatasetReader(Dataset):
                     return os.path.dirname(hits[0])
         return cand[0]
 
-    # ---- array 组装 ----
+    # ---- array ----
     @staticmethod
     def _stack_group(grp) -> np.ndarray:
         return np.concatenate([np.asarray(grp[k]) for k in _JOINT_FIELDS], axis=-1).astype(np.float32)
@@ -180,7 +180,7 @@ class RoboDojoDatasetReader(Dataset):
         if self.action_type == "joint":
             act = self._stack_group(f["action"])   # (T,14)
             st = self._stack_group(f["state"])      # (T,14)
-        else:  # ee：action 组无 ee_pose，用 state 的 ee_poses 构建 16 维
+        else:  # ee: action ee_pose, use state ee_poses 16
             s = f["state"]
             def ee(side):
                 return np.concatenate(
@@ -188,7 +188,7 @@ class RoboDojoDatasetReader(Dataset):
                     axis=-1,
                 )  # (T,8) = xyz3+quat4+grip1
             st = np.concatenate([ee("left"), ee("right")], axis=-1).astype(np.float32)  # (T,16)
-            act = st.copy()  # ee 监督即未来 ee 位姿轨迹
+            act = st.copy()  # ee ee
         return act, st
 
     def __len__(self) -> int:
@@ -217,14 +217,14 @@ class RoboDojoDatasetReader(Dataset):
             np.clip(frame_state, -self.clip_value, self.clip_value, out=frame_state)
             np.clip(frame_action, -self.clip_value, self.clip_value, out=frame_action)
 
-        # delta：动作减去当前帧状态（仅在 mask=True 的维度上）
+        # delta: actioncurrentframestate(onlyin mask=True dimension)
         if self.delta:
             mask = np.asarray(self.delta_mask)
             dims = mask.shape[-1]
             state_form = np.where(mask, frame_state[..., :dims], 0.0)   # (1, dims)
             frame_action[..., :dims] = frame_action[..., :dims] - state_form
 
-        # 归一化（与训练侧 maniparena 完全一致的实现）
+        # (and maniparena )
         if self.normalization_type is not None:
             norm = normalize_action_and_proprio(
                 {"actions": frame_action, "state": frame_state},
@@ -234,7 +234,7 @@ class RoboDojoDatasetReader(Dataset):
             )
             frame_action, frame_state = norm["actions"], norm["state"]
 
-        # pad 到模型固定动作维度
+        # pad tomodelactiondimension
         if self.pad_action_and_proprio:
             if frame_action.shape[-1] < self.fixed_action_dim:
                 frame_action = np.pad(frame_action, ((0, 0), (0, self.fixed_action_dim - frame_action.shape[-1])))

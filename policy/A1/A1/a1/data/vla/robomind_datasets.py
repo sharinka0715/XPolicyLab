@@ -69,7 +69,7 @@ def normalize_action_and_proprio(traj: Dict, metadata: Dict,keys_to_normalize:Di
                 data,  
             )  
                 
-            # 将未使用的动作维度（min == max）设为 0  
+            # Set unused action dimensions (min == max) to 0
             if "min" in metadata[key] and "max" in metadata[key]:
                 zeros_mask = np.array(metadata[key]["min"]) == np.array(metadata[key]["max"])  
                 normalized_data = np.where(zeros_mask, 0.0, normalized_data)  
@@ -83,7 +83,7 @@ def normalize_action_and_proprio(traj: Dict, metadata: Dict,keys_to_normalize:Di
 class RoboMINDDatasetReader(Dataset):
     """RoboMIND 数据集读取器"""
     
-    # 机器人配置信息
+    # Robot configuration information
     ROBOT_CONFIGS = {
         "h5_ur_1rgb": { 
             "camera_names": ['camera_top'], 
@@ -170,7 +170,7 @@ class RoboMINDDatasetReader(Dataset):
         },
     }
     
-    # BGR 颜色空间的 embodiments
+    # Embodiments using BGR color space
     BGR_EMBODIMENTS = ['h5_franka_3rgb', 'h5_franka_1rgb', 'h5_ur_1rgb', 'h5_franka_fr3_dual']
 
     def __init__(self, dataset_path: str, 
@@ -209,11 +209,11 @@ class RoboMINDDatasetReader(Dataset):
         self.arms = self.robot_config['arms']
         self.controls = self.robot_config['controls']
         
-        # 文件缓存
+        # File cache
         self._file_cache = {}
         self._max_cache_size = 0
         
-        # 构建数据集索引：[(env_name, trajectory_id, file_path, frame_idx, num_frames, episode_index), ...]
+        # Build the dataset index: [(env_name, trajectory_id, file_path, frame_idx, num_frames, episode_index),...]
         self._index: List[Tuple[str, str, str, int, int, int]] = []
         self._build_index(env_names, init_index)
         if normalization_type is not None:
@@ -235,7 +235,7 @@ class RoboMINDDatasetReader(Dataset):
             print(f"Index built: {len(self._index)} frames")
             return
 
-        # 获取环境列表
+        # Get the environment list
         embodiment_path = os.path.join(self.dataset_path, self.embodiment)
         if not os.path.exists(embodiment_path):
             raise ValueError(f"Embodiment path does not exist: {embodiment_path}")
@@ -244,8 +244,8 @@ class RoboMINDDatasetReader(Dataset):
             env_names = [d for d in os.listdir(embodiment_path) 
                         if os.path.isdir(os.path.join(embodiment_path, d))]
         
-        # 遍历每个环境
-        episode_counter = 0  # 全局 episode 计数器
+        # Iterate over each environment
+        episode_counter = 0  # Global episode counter
         for env_name in tqdm(env_names, desc="Indexing environments"):
             try:
                 episode_list = self.get_episode_list(env_name)
@@ -253,31 +253,31 @@ class RoboMINDDatasetReader(Dataset):
                 print(f"Warning: {e}")
                 continue
             
-            # 遍历每个 episode
+            # Iterate over each episode
             for trajectory_id, file_path in episode_list:
                 try:
-                    # 获取该 episode 的帧数
+                    # Get the frame count for this episode
                     f, control_dict, metadata = self._get_cached_file(file_path)
                     
-                    # 获取控制数据的长度
+                    # Get the control-data length
                     num_frames = None
                     for arm_name in self.arms:
                         for control_key in self.controls:
                             if control_key in control_dict[arm_name]:
                                 control_data = control_dict[arm_name][control_key]
                                 if num_frames is None:
-                                    num_frames = control_data.shape[0] - 1  # -1 因为 state/action 会少一帧
+                                    num_frames = control_data.shape[0] - 1  # -1 because state/action have one fewer frame
                                 else:
                                     num_frames = min(num_frames, control_data.shape[0] - 1)
                     
                     if num_frames is None or num_frames <= 0:
                         continue
                     
-                    # 为每一帧创建索引条目
+                    # Create an index entry for each frame
                     for frame_idx in range(num_frames):
                         self._index.append((env_name, trajectory_id, file_path, frame_idx, num_frames, episode_counter))
                     
-                    episode_counter += 1  # 每个 episode 递增
+                    episode_counter += 1  # Increment for each episode
                 
                 except Exception as e:
                     print(f"Warning: Failed to index {file_path}: {e}")
@@ -311,7 +311,7 @@ class RoboMINDDatasetReader(Dataset):
         
         env_name, trajectory_id, file_path, frame_idx, num_frames, episode_index = self._index[idx]
         
-        # 调用原有的 read_episode 方法
+        # Call the original read_episode method
         return self.read_episode(file_path, frame_idx=frame_idx, task_description=env_name, episode_index=episode_index, dataset_idx=idx)
     
     def decode_image(self, camera_rgb_images, camera_depth_images=None):
@@ -378,7 +378,7 @@ class RoboMINDDatasetReader(Dataset):
             control_dict: 控制数据字典（已读取）
             metadata: 元数据字典
         """
-        # 打开文件并读取控制数据（不读取图像）
+        # Open the file and read control data without reading images
         f = h5py.File(file_path, 'r')
         
         control_dict = defaultdict(dict)
@@ -394,13 +394,13 @@ class RoboMINDDatasetReader(Dataset):
         return (f, control_dict, metadata)
 
         # if file_path not in self._file_cache:
-        #     # 如果缓存已满，清除最旧的条目
+        # # If the cache is full, clear the oldest entry
         #     if len(self._file_cache) >= self._max_cache_size:
         #         oldest_key = next(iter(self._file_cache))
         #         self._file_cache[oldest_key][0].close()
         #         del self._file_cache[oldest_key]
             
-        #     # 打开文件并读取控制数据（不读取图像）
+        # # Open the file and read control data without reading images
         #     f = h5py.File(file_path, 'r')
             
         #     control_dict = defaultdict(dict)
@@ -445,7 +445,7 @@ class RoboMINDDatasetReader(Dataset):
         """
         f, control_dict, metadata = self._get_cached_file(file_path)
         
-        # 读取并解码所有图像
+        # Read and decode all images
         image_dict = defaultdict(dict)
         for cam_name in self.camera_names:
             if len(self.camera_sensors) >= 2:
@@ -476,9 +476,9 @@ class RoboMINDDatasetReader(Dataset):
             action: 动作数据 (T, action_dim) - 格式: [right_xyz(3) + right_euler(3) + right_grip(1) + left_xyz(3) + left_euler(3) + left_grip(1)] = 14维
             state: 状态数据 (T, state_dim) - 格式同 action
         """
-        # 根据不同的 embodiment 提取不同的控制数据
+        # Extract different control data for each embodiment
         if self.embodiment in ['h5_franka_3rgb', 'h5_franka_1rgb', 'h5_ur_1rgb']:
-            # 单臂机器人：end_effector (xyz + euler) + gripper
+            # single armrobot: end_effector (xyz + euler) + gripper
             if self.mode == 'joint':
                 left = control_dict['puppet']['joint_position'] 
             elif self.mode == 'ee':
@@ -491,10 +491,10 @@ class RoboMINDDatasetReader(Dataset):
             else:
                 raise ValueError(f"Invalid mode: {self.mode}")
             
-            right = np.zeros_like(left)  # 右臂为0
+            right = np.zeros_like(left)  # Right arm is zero
             
         elif self.embodiment == 'h5_agilex_3rgb':
-            # 双臂机器人：end_effector_left/right (xyz + euler + grip_raw)
+            # dual armrobot: end_effector_left/right (xyz + euler + grip_raw)
             if self.mode == 'joint':
                 le = control_dict['puppet']['joint_position_left']
                 re = control_dict['puppet']['joint_position_right']
@@ -503,11 +503,11 @@ class RoboMINDDatasetReader(Dataset):
                 re = control_dict['puppet']['end_effector_right']
             else:
                 raise ValueError(f"Invalid mode: {self.mode}")
-            # 转换为：xyz(3) + euler(3) + grip(1) = 7维 (每只手)
+            # Convert to: xyz(3) + euler(3) + grip(1) = 7 (per hand)
             left = np.concatenate([
                 le[:, :3],      # xyz
                 le[:, 3:6],     # euler angles
-                (le[:, -1:] > 2.5).astype(np.float32)  # 阈值处理 gripper
+                (le[:, -1:] > 2.5).astype(np.float32)  # Threshold the gripper
             ], axis=-1)
             right = np.concatenate([
                 re[:, :3],      # xyz
@@ -516,7 +516,7 @@ class RoboMINDDatasetReader(Dataset):
             ], axis=-1)
             
         elif self.embodiment == 'h5_franka_fr3_dual':
-            # 双臂 franka：end_effector (L_xyz L_euler R_xyz R_euler) + grippers from joint_position
+            # dual arm franka：end_effector (L_xyz L_euler R_xyz R_euler) + grippers from joint_position
             ee = control_dict['puppet']['end_effector']         # [T, 12]
             jp = control_dict['puppet']['joint_position']       # [T, ...]
             if self.mode == 'joint':
@@ -526,17 +526,17 @@ class RoboMINDDatasetReader(Dataset):
                 left = np.concatenate([
                     ee[:, 0:3],     # xyz
                     ee[:, 3:6],     # euler angles
-                    jp[:, 7:8]      # 左臂 gripper
+                    jp[:, 7:8]      # Left-arm gripper
                 ], axis=-1)
                 right = np.concatenate([
                     ee[:, 6:9],     # xyz
                     ee[:, 9:12],    # euler angles
-                    jp[:, -1:]      # 右臂 gripper
+                    jp[:, -1:]      # Right-arm gripper
                 ], axis=-1)
             else:
                 raise ValueError(f"Invalid mode: {self.mode}")
         else:
-            # 其他机器人：回退到原来的逻辑（读取所有控制数据）
+            # Other robots: fall back to the original logic and read all control data
             action_list = []
             for arm_name in self.arms:
                 control_list = []
@@ -558,10 +558,10 @@ class RoboMINDDatasetReader(Dataset):
             action = action[1:].copy()
             return action, state
         
-        # 拼接右手+左手：[right(7) + left(7)] = 14维 (与 lerobot_datasets.py 格式一致)
+        # Concatenate right hand + left hand: [right(7) + left(7)] = 14 (matching the lerobot_datasets.py format)
         action = np.concatenate([right, left], axis=1)
         
-        # state 是当前时刻的 action，action 是下一时刻的
+        # state is the action at the current time; action is from the next time step
         state = action[:-1].copy()
         action = action[1:].copy()
         
@@ -585,11 +585,11 @@ class RoboMINDDatasetReader(Dataset):
                 
                 processed_imgs = []
                 for img in rgb_imgs:
-                    # 颜色空间转换
+                    # Color-space conversion
                     if self.embodiment in self.BGR_EMBODIMENTS:
                         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                     
-                    # 调整大小
+                    # Resize
                     if self.resolution is not None:
                         img = cv2.resize(img, self.resolution, interpolation=cv2.INTER_AREA)
                     processed_imgs.append(img)
@@ -643,29 +643,29 @@ class RoboMINDDatasetReader(Dataset):
         Returns:
             return_dict: 与 lerobot_datasets 格式一致的数据字典
         """
-        # 使用缓存的文件句柄和控制数据
+        # Use cached file handles and control data
         f, control_dict, metadata = self._get_cached_file(file_path)
         action, state = self.process_control_data(control_dict)
-        # 确保 frame_idx 有效
+        # Ensure frame_idx is valid
         max_frames = min(action.shape[0], state.shape[0])
         if frame_idx >= max_frames:
             frame_idx = max_frames - 1
         
-        # 只读取并解码需要的单帧图像（关键优化点）
+        # Read and decode only the needed single-frame image, which is the key optimization
         images = []
         for cam_name in self.camera_names:
             try:
-                # 只读取单帧的压缩数据
+                # Read only the compressed data for a single frame
                 if len(self.camera_sensors) >= 2:
                     rgb_data = f['observations'][self.camera_sensors[0]][cam_name][frame_idx]
                 else:
                     rgb_data = f['observations'][self.camera_sensors[0]][cam_name][frame_idx]
                 
-                # 解码单帧图像
+                # Decode a single-frame image
                 if isinstance(rgb_data, np.ndarray):
                     img = cv2.imdecode(rgb_data, cv2.IMREAD_COLOR)
                     if img is None:
-                        # 尝试直接reshape
+                        # Try reshaping directly
                         if rgb_data.size == 2764800:
                             img = rgb_data.reshape(720, 1280, 3)
                         elif rgb_data.size == 921600:
@@ -675,11 +675,11 @@ class RoboMINDDatasetReader(Dataset):
                 else:
                     img = np.array(rgb_data)
                 
-                # 颜色空间转换
+                # Color-space conversion
                 if self.embodiment in self.BGR_EMBODIMENTS:
                     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 
-                # 调整大小
+                # Resize
                 if self.resolution is not None:
                     img = cv2.resize(img, self.resolution, interpolation=cv2.INTER_AREA)
                 images.append(img)
@@ -689,14 +689,14 @@ class RoboMINDDatasetReader(Dataset):
                 # print(f"Warning: Failed to read image from {cam_name} at frame {frame_idx} in file {file_path}: {e}")
                 continue
         
-        # 获取当前时刻的 state（单帧）
+        # Get the state at the current time step as a single frame
         frame_state = state[frame_idx:frame_idx+1]    # (1, state_dim)
         
-        # 获取从当前帧开始的未来 chunk_size 帧的动作
+        # Get the next chunk_size action frames starting from the current frame
         end_idx = min(frame_idx + self.chunk_size, action.shape[0])
         frame_action = action[frame_idx:end_idx]  # (chunk_size, action_dim)
         
-        # 如果不足 chunk_size 帧，用最后一帧补齐
+        # If there are fewer than chunk_size frames, pad with the last frame
         if frame_action.shape[0] < self.chunk_size:
             last_action = frame_action[-1:]
             padding = np.repeat(last_action, self.chunk_size - frame_action.shape[0], axis=0)
@@ -716,9 +716,9 @@ class RoboMINDDatasetReader(Dataset):
                 pad_len_proprio = self.fixed_action_dim - frame_state.shape[-1]
                 frame_state = np.pad(frame_state, ((0, 0), (0, pad_len_proprio)), mode='constant')
 
-        # 任务描述
+        # Task description
         if task_description is None:
-            # 从文件路径提取任务名称
+            # Extract the task name from the file path
             task_description = os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(file_path))))
         try:
             question = f['language_raw'][0].decode('utf-8')
@@ -773,7 +773,7 @@ class RoboMINDDatasetReader(Dataset):
             
             for trajectory_id, file_path in tqdm(episode_list, desc=f"Reading {env_name}"):
                 try:
-                    # 关键优化：只读取控制数据，不读取和解码图像
+                    # Key optimization: read only control data, without reading or decoding images
                     control_dict, metadata = self.read_control_data_only(file_path)
                     action, state = self.process_control_data(control_dict)
                     
@@ -787,7 +787,7 @@ class RoboMINDDatasetReader(Dataset):
         if not all_actions:
             raise ValueError(f"No valid data found for embodiment {self.embodiment}")
         
-        # 拼接所有数据
+        # Concatenate all data
         all_actions = np.concatenate(all_actions, axis=0)  # (N, action_dim)
         all_states = np.concatenate(all_states, axis=0)    # (N, state_dim)
         
@@ -795,7 +795,7 @@ class RoboMINDDatasetReader(Dataset):
         print(f"Action dimension: {all_actions.shape[1]}")
         print(f"State dimension: {all_states.shape[1]}")
         
-        # 计算统计量
+        # Compute statistics
         stats = {
             "action": {
                 "max": np.max(all_actions, axis=0).tolist(),
@@ -838,16 +838,16 @@ class RoboMINDDatasetReader(Dataset):
         image_dict, control_dict, base_dict = self.read_h5_file(file_path)
         action, state = self.process_control_data(control_dict)
         
-        # 确保输出目录存在
+        # Ensure the output directory exists
         traj_output_dir = os.path.join(output_dir, trajectory_id)
         os.makedirs(traj_output_dir, exist_ok=True)
         
         video_paths = []
         
-        # 对齐帧数
+        # Align frame counts
         num_frames = min(action.shape[0], state.shape[0])
         
-        # 为每个相机生成视频
+        # Generate a video for each camera
         for sensor_type in image_dict.keys():
             if sensor_type == 'depth_images' and not show_depth:
                 continue
@@ -861,47 +861,47 @@ class RoboMINDDatasetReader(Dataset):
                 if images.shape[0] == 0:
                     continue
                 
-                # 处理图像
+                # Process image
                 processed_frames = []
                 for idx, img in enumerate(images):
                     img = np.array(img)
                     
                     if sensor_type == 'rgb_images':
-                        # 颜色空间转换
+                        # Color-space conversion
                         if self.embodiment in self.BGR_EMBODIMENTS:
                             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                     
                     elif sensor_type == 'depth_images':
                         if img is not None and img.size > 0:
-                            # 归一化深度图
+                            # Normalize the depth image
                             depth_min = np.min(img)
                             depth_max = np.max(img)
                             if depth_max > depth_min:
                                 img = ((img - depth_min) / (depth_max - depth_min) * 255).astype(np.uint8)
                             else:
                                 img = np.zeros_like(img, dtype=np.uint8)
-                            # 应用伪彩色
+                            # Apply pseudo-color
                             img = cv2.applyColorMap(img, cv2.COLORMAP_JET)
                             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                         else:
                             continue
                     
-                    # 调整大小
+                    # Resize
                     if self.resolution is not None:
                         img = cv2.resize(img, self.resolution, interpolation=cv2.INTER_AREA)
                     
-                    # 添加文本信息（帧号、动作、状态）
+                    # Add text information: frame number, action, and state
                     img_with_text = img.copy()
                     font = cv2.FONT_HERSHEY_SIMPLEX
                     font_scale = 0.3
                     thickness = 1
                     color = (255, 255, 255)
                     
-                    # 添加帧号
+                    # Add the frame number
                     cv2.putText(img_with_text, f"Frame: {idx}", (5, 15), 
                                font, font_scale, color, thickness)
                     
-                    # 添加相机名称
+                    # Add the camera name
                     cv2.putText(img_with_text, f"Cam: {cam_name}", (5, 30), 
                                font, font_scale, color, thickness)
                     
@@ -910,17 +910,17 @@ class RoboMINDDatasetReader(Dataset):
                 if not processed_frames:
                     continue
                 
-                # 生成视频文件
+                # Generate the video file
                 video_filename = f"{cam_name}_{sensor_type}.mp4"
                 video_path = os.path.join(traj_output_dir, video_filename)
                 
-                # 使用 OpenCV 写入视频
+                # Write the video with OpenCV
                 height, width = processed_frames[0].shape[:2]
                 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
                 out = cv2.VideoWriter(video_path, fourcc, fps, (width, height))
                 
                 for frame in processed_frames:
-                    # OpenCV 需要 BGR 格式
+                    # OpenCV requires BGR format
                     frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                     out.write(frame_bgr)
                 
@@ -951,7 +951,7 @@ class RoboMINDDatasetReader(Dataset):
         if num_episodes is not None:
             episode_list = episode_list[:num_episodes]
         
-        # 创建输出目录
+        # Create the output directory
         env_output_dir = os.path.join(output_dir, self.embodiment, env_name)
         os.makedirs(env_output_dir, exist_ok=True)
         
@@ -1011,7 +1011,7 @@ def main():
     args = parser.parse_args()
     if not args.resize:
         args.resolution = None
-    # 将 embodiment 转换为列表
+    # embodiment Convert tocolumn
     embodiments = args.embodiment if isinstance(args.embodiment, list) else [args.embodiment]
     if args.mode == "build_index":
         print('embodiments',embodiments)
@@ -1028,19 +1028,19 @@ def main():
             except Exception as e:
                 print(f'building {embodiment} error in {args.dataset_path}')
     if args.mode == "read":
-        # 读取模式只支持单个 embodiment
+        # Read mode supports only one embodiment
         if len(embodiments) != 1:
             raise ValueError("For 'read' mode, please specify exactly one embodiment")
         
-        # 初始化读取器
+        # Initialize the reader
         reader = RoboMINDDatasetReader(
             embodiment=embodiments[0],
             dataset_path=args.dataset_path,
             resolution=args.resolution,
-            env_names=args.env_name  # 传入 env_names
+            env_names=args.env_name  # Pass env_names
         )
     
-        # 读取数据模式
+        # Read-data mode
         print(f"\n=== Dataset Info ===")
         print(f"Total frames: {len(reader)}")
         print(f"Embodiment: {embodiments[0]}")
@@ -1049,11 +1049,11 @@ def main():
         else:
             print(f"Environments: All available")
         
-        # 示例：读取指定索引的数据
+        # Example:Read data at the specified index
         if len(reader) == 0:
             print("Error: No data found in the dataset")
         else:
-            # 随机读取几个样本作为示例
+            # Randomly read a few samples as examples
             import random
             sample_indices = random.sample(range(len(reader)), min(100, len(reader)))
             
@@ -1073,7 +1073,7 @@ def main():
                 print(f"  State shape: {data['proprio'].shape}")
         
     elif args.mode == "stats":
-        # 统计模式 - 支持多个 embodiment
+        # Statistics mode - supports multiple embodiments
         all_stats = {}
         overall_actions = []
         overall_states = []
@@ -1083,16 +1083,16 @@ def main():
             print(f"Processing embodiment: {embodiment}")
             print(f"{'='*60}")
             
-            # 初始化读取器
+            # Initialize the reader
             reader = RoboMINDDatasetReader(
                 embodiment=embodiment,
                 dataset_path=args.dataset_path,
                 resolution=args.resolution
             )
             
-            # 获取环境列表
+            # Get the environment list
             if not args.env_name:
-                # 如果没有指定环境，获取该 embodiment 下的所有环境
+                # If no environment is specified, get all environments under this embodiment
                 embodiment_path = os.path.join(args.dataset_path, embodiment)
                 if not os.path.exists(embodiment_path):
                     print(f"Warning: Embodiment path does not exist: {embodiment_path}")
@@ -1104,16 +1104,16 @@ def main():
             else:
                 env_names = args.env_name
             
-            # 初始化读取器（注意：这里不会构建索引，因为 stats 模式直接调用 compute_stats）
+            # Initialize the reader(Note: this does not build an index because stats mode calls compute_stats directly)
             reader_for_stats = RoboMINDDatasetReader(
                 embodiment=embodiment,
                 dataset_path=args.dataset_path,
                 resolution=args.resolution,
-                env_names=[]  # 传入空列表，避免构建索引
+                env_names=[]  # Pass an empty list to avoid building the index
             )
             
             try:
-                # 如果有多个 embodiment，收集原始数据用于计算总体统计
+                # If there are multiple embodiments, collect raw data to compute overall statistics
                 if len(embodiments) > 1:
                     stats, raw_actions, raw_states = reader_for_stats.compute_stats(env_names, return_raw_data=True)
                     overall_actions.append(raw_actions)
@@ -1132,18 +1132,18 @@ def main():
         if not all_stats:
             raise ValueError("No valid statistics computed for any embodiment")
         
-        # 计算总体统计（如果有多个 embodiment）
+        # Compute overall statistics if there are multiple embodiments
         overall_stats = None
         if len(embodiments) > 1 and overall_actions:
             print(f"\n{'='*60}")
             print("Computing overall statistics across all embodiments...")
             print(f"{'='*60}")
             
-            # 找到最大维度
+            # Find the maximum dimension
             max_action_dim = max([a.shape[1] for a in overall_actions])
             max_state_dim = max([s.shape[1] for s in overall_states])
             
-            # Pad 到相同维度
+            # Pad tothe same dimension
             padded_actions = []
             padded_states = []
             
@@ -1158,7 +1158,7 @@ def main():
                     states = np.pad(states, ((0, 0), (0, pad_width)), mode='constant', constant_values=0)
                 padded_states.append(states)
             
-            # 合并所有数据
+            # Merge all data
             combined_actions = np.concatenate(padded_actions, axis=0)
             combined_states = np.concatenate(padded_states, axis=0)
             
@@ -1185,7 +1185,7 @@ def main():
                 }
             }
         
-        # 保存统计信息
+        # Save statistics
         output_data = {
             "embodiments": list(all_stats.keys()),
             "per_embodiment_stats": all_stats
@@ -1201,7 +1201,7 @@ def main():
         print(f"Statistics saved to: {args.output_path}")
         print(f"{'='*60}")
         
-        # 打印每个 embodiment 的统计摘要
+        # Print the statistics summary for each embodiment
         for embodiment, data in all_stats.items():
             print(f"\n=== {embodiment} Statistics Summary ===")
             print(f"Environments: {', '.join(data['environments'])}")
@@ -1219,7 +1219,7 @@ def main():
             print(f"  Min: [{np.min(stats['state']['min']):.4f}, {np.max(stats['state']['min']):.4f}]")
             print(f"  Max: [{np.min(stats['state']['max']):.4f}, {np.max(stats['state']['max']):.4f}]")
         
-        # 打印总体统计摘要
+        # Print the overall statistics summary
         if overall_stats:
             print(f"\n{'='*60}")
             print(f"=== Overall Statistics (All Embodiments Combined) ===")
@@ -1238,7 +1238,7 @@ def main():
             print(f"  Max: [{np.min(overall_stats['state']['max']):.4f}, {np.max(overall_stats['state']['max']):.4f}]")
     
     elif args.mode == "visualize":
-        # 可视化模式
+        # Visualization mode
         if not args.env_name:
             raise ValueError("For 'visualize' mode, please specify at least one environment name")
         
@@ -1247,15 +1247,15 @@ def main():
             print(f"Visualizing embodiment: {embodiment}")
             print(f"{'='*60}")
             
-            # 初始化读取器（注意：visualize 模式不需要构建完整索引）
+            # Initialize the reader(Note: visualize mode does not need to build the full index)
             reader = RoboMINDDatasetReader(
                 embodiment=embodiment,
                 dataset_path=args.dataset_path,
                 resolution=args.resolution,
-                env_names=[]  # 传入空列表，避免构建索引
+                env_names=[]  # Pass an empty list to avoid building the index
             )
             
-            # 为每个环境生成视频
+            # Generate videos for each environment
             for env_name in args.env_name:
                 print(f"\nProcessing environment: {env_name}")
                 try:

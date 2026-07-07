@@ -84,7 +84,7 @@ def encode_video_frames(
             "-i", os.path.join(tmp_dir, "frame_%06d.png"),
             "-vcodec", codec,
             "-pix_fmt", pix_fmt,
-            "-g", str(2),       # GOP size = 2，方便按帧解码
+            "-g", str(2),       # GOP size = 2, byframe
             "-crf", "20",
             str(output_path),
         ]
@@ -252,7 +252,7 @@ def build_parquet_table(episode_buffer: dict, features: dict):
 
     for key, ft in features.items():
         if ft["dtype"] == "video":
-            # 仅保存 timestamp，路径由 info.json 中的模板推导
+            # onlysave timestamp, path info.json in
             columns[key] = pa.array(episode_buffer["timestamp"], type=pa.float32())
         elif ft["dtype"] == "float32":
             columns[key] = pa.array([float(v) for v in episode_buffer[key]], type=pa.float32())
@@ -261,7 +261,7 @@ def build_parquet_table(episode_buffer: dict, features: dict):
             if arr.ndim == 2:
                 columns[key] = pa.array([row.tolist() for row in arr], type=pa.list_(pa.float64()))
             else:
-                # 标量 float64 也存成长度为 1 的数组
+                # float64 as 1
                 data = [[v] for v in arr.tolist()]
                 columns[key] = pa.array(data, type=pa.list_(pa.float64()))
         elif ft["dtype"] == "int64":
@@ -337,7 +337,7 @@ def process(args):
 
         chunk = get_episode_chunk(ep_idx)
 
-        # 编码每个相机的视频
+        # camera video
         video_paths_map = {}
         for vid_key in video_keys:
             camera = vid_key.replace("observation.images.", "")
@@ -355,7 +355,7 @@ def process(args):
                     info["features"][vid_key]["info"] = vi
                 video_info_recorded = True
 
-        # 构建 episode buffer
+        # episode buffer
         episode_buffer: dict[str, list] = {key: [] for key in features}
 
         for i in range(num_frames):
@@ -378,7 +378,7 @@ def process(args):
                     pc_key = f"observation.pointClouds.{camera}"
                     episode_buffer[pc_key].append(pointclouds[camera][i])
 
-        # 写 parquet
+        # parquet
         parquet_rel = DEFAULT_PARQUET_PATH.format(episode_chunk=chunk, episode_index=ep_idx)
         parquet_path = target_dir / parquet_rel
         parquet_path.parent.mkdir(parents=True, exist_ok=True)
@@ -394,7 +394,7 @@ def process(args):
 
         total_frames += num_frames
 
-    # ========== 写元数据 ==========
+    # ========== data ==========
     info["total_episodes"] = len(episodes_meta)
     info["total_frames"] = total_frames
     info["total_tasks"] = len(task_to_index)
@@ -414,7 +414,7 @@ def process(args):
             task_entry = OrderedDict([("task_index", idx), ("task", task_text)])
             f.write(json.dumps(task_entry, ensure_ascii=False) + "\n")
 
-    # ========== 打印汇总 ==========
+    # ========== print ==========
     print("\n" + "=" * 80)
     print("转换完成!")
     print("=" * 80)

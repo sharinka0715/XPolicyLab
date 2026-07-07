@@ -20,17 +20,17 @@ def count_episodes_from_data_files(dataset_path: Path) -> int:
     
     episode_indices = set()
     
-    # 遍历所有 chunk 目录
+    # iterateall chunk directory
     for chunk_dir in sorted(data_dir.glob("chunk-*")):
         if not chunk_dir.is_dir():
             continue
         
-        # 遍历每个 chunk 中的所有 parquet 文件
+        # iterate chunk in all parquet file
         for parquet_file in sorted(chunk_dir.glob("file-*.parquet")):
             try:
                 table = pq.read_table(parquet_file)
                 if "episode_index" in table.column_names:
-                    # 获取所有唯一的 episode_index
+                    # getall episode_index
                     episode_col = table["episode_index"]
                     unique_episodes = set(episode_col.to_pylist())
                     episode_indices.update(unique_episodes)
@@ -52,12 +52,12 @@ def count_episodes_from_video_files(dataset_path: Path, video_key: str) -> dict:
     if not video_dir.exists():
         return {"total_episodes": 0, "video_files": 0, "missing_episodes": [], "expected_episodes": 0}
     
-    # 读取 episode metadata 来获取每个 episode 对应的视频文件
+    # read episode metadata get episode for videofile
     episodes_meta_path = dataset_path / "meta" / "episodes"
     episode_to_video = {}  # {episode_index: (chunk_idx, file_idx)}
     
     if episodes_meta_path.exists():
-        # 遍历所有 chunk 的 parquet 文件
+        # iterateall chunk parquet file
         for chunk_meta_dir in sorted(episodes_meta_path.glob("chunk-*")):
             if not chunk_meta_dir.is_dir():
                 continue
@@ -80,7 +80,7 @@ def count_episodes_from_video_files(dataset_path: Path, video_key: str) -> dict:
                 except Exception as e:
                     print(f"Error reading episode metadata {meta_file}: {e}")
     
-    # 统计实际存在的视频文件（所有 chunk 中的所有文件）
+    # statisticsin videofile(all chunk in allfile)
     video_files = set()
     for chunk_dir in sorted(video_dir.glob("chunk-*")):
         if not chunk_dir.is_dir():
@@ -92,7 +92,7 @@ def count_episodes_from_video_files(dataset_path: Path, video_key: str) -> dict:
             file_idx = int(video_file.stem.split("-")[-1])
             video_files.add((chunk_idx, file_idx))
     
-    # 检查每个 episode 的视频文件是否存在
+    # check episode videofilein
     existing_episodes = set()
     missing_episodes = []
     
@@ -126,7 +126,7 @@ def check_dataset_episodes(dataset_path: Path) -> dict:
         "issues": [],
     }
     
-    # 1. 读取 info.json
+    # 1. read info.json
     info_path = dataset_path / "meta" / "info.json"
     if not info_path.exists():
         result["status"] = "no_info"
@@ -138,7 +138,7 @@ def check_dataset_episodes(dataset_path: Path) -> dict:
             info = json.load(f)
         result["info_episodes"] = info.get("total_episodes", 0)
         
-        # 获取视频 keys
+        # getvideo keys
         features = info.get("features", {})
         video_keys = [k for k, v in features.items() if v.get("dtype") == "video"]
     except Exception as e:
@@ -146,15 +146,15 @@ def check_dataset_episodes(dataset_path: Path) -> dict:
         result["issues"].append(f"Error reading info.json: {e}")
         return result
     
-    # 2. 统计 data 目录中的 episode 数
+    # 2. statistics data directoryin episode
     result["data_episodes"] = count_episodes_from_data_files(dataset_path)
     
-    # 3. 统计每个 video key 的 episode 数
+    # 3. statistics video key episode
     for video_key in video_keys:
         video_info = count_episodes_from_video_files(dataset_path, video_key)
         result["video_episodes"][video_key] = video_info
     
-    # 4. 检查是否匹配
+    # 4. check
     issues = []
     
     if result["info_episodes"] != result["data_episodes"]:

@@ -291,9 +291,9 @@ class Qwen2Attention(nn.Module):
         # use flex_attention
         # block_mask = None
         # if attention_mask is not None:
-        #     # 将 4D attention_mask 转换为 flex_attention 的 block_mask
-        #     # 这里需要根据你的 attention_mask 格式来适配
-        #     # 如果是标准的 causal mask,可以使用 create_block_mask
+        # # 4D attention_mask Convert to flex_attention block_mask
+        # # attention_mask
+        # # if causal mask,use create_block_mask
         #     def causal_mask_mod(b, h, q_idx, kv_idx):
         #         return q_idx >= kv_idx
             
@@ -306,14 +306,14 @@ class Qwen2Attention(nn.Module):
         #         device=query_states.device
         #     )
         
-        # 使用 flex_attention
+        # use flex_attention
         # attn_output = flex_attention(
         #     query_states,  # (bsz, num_heads, q_len, head_dim)
         #     key_states,    # (bsz, num_key_value_heads, kv_len, head_dim)
         #     value_states,  # (bsz, num_key_value_heads, kv_len, head_dim)
         #     block_mask=block_mask,
-        #     enable_gqa=(self.num_key_value_heads != self.num_heads),  # 自动处理 GQA
-        #     scale=1.0 / math.sqrt(self.head_dim),  # 缩放因子
+        # enable_gqa=(self.num_key_value_heads != self.num_heads), # process GQA
+        # scale=1.0 / math.sqrt(self.head_dim), #
         #     dropout_p=self.attention_dropout if self.training else 0.0,
         # )
 
@@ -434,7 +434,7 @@ class Qwen2FlashAttention2(Qwen2Attention):
             key_states = key_states.to(target_dtype)
             value_states = value_states.to(target_dtype)
 
-        # 创建block_mask用于causal attention和sliding window
+        # createblock_maskusecausal attentionandsliding window
         block_mask = None
         if self.is_causal or (
             self.config.use_sliding_window
@@ -462,18 +462,18 @@ class Qwen2FlashAttention2(Qwen2Attention):
                 device=query_states.device,
             )
 
-        # 使用flex_attention
+        # useflex_attention
         attn_output = flex_attention(
             query_states,  # (bsz, num_heads, q_len, head_dim)
             key_states,    # (bsz, num_key_value_heads, kv_len, head_dim)
             value_states,  # (bsz, num_key_value_heads, kv_len, head_dim)
-            enable_gqa=(self.num_heads != self.num_key_value_heads),  # 启用GQA
+            enable_gqa=(self.num_heads != self.num_key_value_heads),  # useGQA
             block_mask=block_mask,
-            scale=1.0 / math.sqrt(self.head_dim),  # 手动设置scale
+            scale=1.0 / math.sqrt(self.head_dim),  # setscale
         )
     
-        # flex_attention输出shape: (bsz, num_heads, q_len, head_dim)
-        # 需要转换为 (bsz, q_len, num_heads, head_dim) 然后reshape
+        # flex_attentionshape: (bsz, num_heads, q_len, head_dim)
+        # Convert to (bsz, q_len, num_heads, head_dim) afterreshape
         attn_output = attn_output.transpose(1, 2).contiguous()
         attn_output = attn_output.reshape(bsz, q_len, self.hidden_size)
 

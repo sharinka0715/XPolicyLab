@@ -61,10 +61,10 @@ class CategorySpecificLinear(nn.Module):
         self.init_params()
 
     def init_params(self):
-        # 对每个 category 独立初始化，模仿 nn.Linear
+        # for category , nn.Linear
         for i in range(self.num_categories):
             tmp_linear = nn.Linear(self.W.shape[1], self.W.shape[2])  # in_dim -> hidden_dim
-            self.W.data[i] = tmp_linear.weight.t().clone()  # 因为 Linear 是 (out, in)，我们存 (in, out)
+            self.W.data[i] = tmp_linear.weight.t().clone()  # as Linear (out, in), (in, out)
             self.b.data[i] = tmp_linear.bias.clone()
 
     def forward(self, x, cat_ids):
@@ -453,7 +453,7 @@ class FlowmatchingActionHead(nn.Module):
     ):
         super().__init__()
         config = full_config.framework.action_model
-        self.hidden_size = config.hidden_size # 是不要和 Q对齐？
+        self.hidden_size = config.hidden_size # and Qfor？
         self.full_config = full_config
         action_model_type = config.action_model_type
         action_model_cfg = DiTConfig[action_model_type]
@@ -633,7 +633,7 @@ class FlowmatchingActionHead(nn.Module):
         if assigned_tasks is None:
             raise ValueError("assigned_tasks must be provided for strict task-balanced training.")
 
-        # === 1. 预处理 curr_obs / next_obs ===
+        # === 1. process curr_obs / next_obs ===
         curr_obs = rearrange(curr_imgs, "b (v t) c h w -> b v t c h w", v=self.num_views)
         B_, V, T = curr_obs.shape[:3]
         assert B_ == B
@@ -644,7 +644,7 @@ class FlowmatchingActionHead(nn.Module):
             curr_obs = rearrange(curr_obs, "(b v) t h w c -> b (v t h w) c", b=B, v=V)
         else:
             curr_obs = rearrange(curr_obs, "(b v t) n c -> b (v t n) c", b=B, v=V)
-        # === 2. 处理 next_obs（real or learnable）===
+        # === 2. process next_obs(real or learnable)===
         next_obs = rearrange(future_imgs, "b (v t) c h w -> b v t c h w", v=self.num_views)
         next_obs = self.transform_obs(next_obs, B, V, T)
         next_obs = self.encode_future_img(next_obs)
@@ -661,8 +661,8 @@ class FlowmatchingActionHead(nn.Module):
         else:
             state_features = self.state_encoder(state) if self.state_dim is not None else None
 
-        # === 4. 准备 per-sample 输入 ===
-        # 为每个样本构造：action_features, noisy_next_obs, velocity
+        # === 4. per-sample Input ===
+        # assample: action_features, noisy_next_obs, velocity
         policy_indices = []
         forward_dynamics_indices = []
         inverse_dynamics_indices = []
@@ -739,12 +739,12 @@ class FlowmatchingActionHead(nn.Module):
         # video gen: use learnable action tokens
         video_gen_act_feat = self.action_learnable_tokens.weight.unsqueeze(0).expand(len(video_gen_indices), -1, -1)
 
-        # === 5. 拼接所有样本 ===
+        # === 5. allsample ===
         action_features = torch.cat((noisy_act_feat, forward_act_feat, video_gen_act_feat), dim=0)  # (B, T_a, D)
         noisy_next_obs = torch.cat((policy_obs_feat, inv_obs_feat, noisy_obs), dim=0)    # (B, N_obs, D)
         diffusion_t = torch.cat((act_t_discretized, obs_t_discretized), dim=0)          # (B,)    
         task_embedding = torch.cat((policy_embedding, id_embedding, fd_embedding, vg_embedding), dim=0)
-        # === 6. 构建完整输入序列 ===
+        # === 6. Inputcolumn ===
         future_tokens = self.future_tokens.weight.unsqueeze(0).expand(B, -1, -1)
 
         # concat curr_obs_tokens with future_tokens channelwise
@@ -759,7 +759,7 @@ class FlowmatchingActionHead(nn.Module):
             pos_ids = torch.arange(total_len, device=device)
             pos_embs = self.position_embedding(pos_ids).unsqueeze(0)
             sa_embs = sa_embs + pos_embs
-        # === 7. 模型前向 ===
+        # === 7. modelbefore ===
         model_output = self.model(
             hidden_states=sa_embs,
             encoder_hidden_states=vl_embs,
@@ -769,14 +769,14 @@ class FlowmatchingActionHead(nn.Module):
             encoder_attention_mask=encoder_attention_mask,
         )
 
-        # === 8. 解码输出 ===
+        # === 8. ===
         if self.multi_embodiment:
             pred_actions = self.action_decoder(model_output, embodiment_id)
         else:
             pred_actions = self.action_decoder(model_output)
         pred_actions = pred_actions[:, -(actions.shape[1] + self.obs_len + self.glob_len) : -(self.obs_len + self.glob_len)]
         
-        # === 9. 计算 per-sample loss ===
+        # === 9. compute per-sample loss ===
         total_loss = 0.0
 
         pred_actions = pred_actions[:len(pred_action_task_indices)]

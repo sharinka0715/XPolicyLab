@@ -156,7 +156,7 @@ class Point:
         now_pose_mat[:3, :3] = (base_trans_mat[:3, :3] @ init_pose_mat[:3, :3] @ base_trans_mat[:3, :3].T)
         now_pose_mat[:3, 3] = base_trans_mat[:3, :3] @ init_pose_mat[:3, 3]
 
-        # 转化为世界坐标
+        # as
         p = now_pose_mat[:3, 3] + now_base_mat[:3, 3]
         q_mat = now_pose_mat[:3, :3] @ now_base_mat[:3, :3]
         return sapien.Pose(p, t3d.quaternions.mat2quat(q_mat))
@@ -481,14 +481,14 @@ def get_place_pose(
     actor_pose_mat = _toPose(actor_pose).to_transformation_matrix()
     target_pose_mat = _toPose(target_pose).to_transformation_matrix()
 
-    # 将物体的三维坐标与给定坐标对齐
+    # andfor
     actor_pose_mat[:3, 3] = target_pose_mat[:3, 3]
 
     target_x = target_pose_mat[:3, 0]
     target_y = target_pose_mat[:3, 1]
     target_z = target_pose_mat[:3, 2]
 
-    # 将物体的 z 轴与给定坐标的 z 轴对齐
+    # z and z for
     actor2world = np.array([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]]).T
     if z_transform:
         z_align_matrix = get_align_matrix(actor_pose_mat[:3, :3] @ actor2world[:3, 2], target_z)

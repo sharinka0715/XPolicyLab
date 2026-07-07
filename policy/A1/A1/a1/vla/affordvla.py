@@ -103,15 +103,15 @@ class AffordVLA(Molmo):
                 proprio_dim=config.proprio_dim,
                 horizon=config.num_actions_chunk,
                 qwen2_hidden_size=getattr(self.config, 'action_head_flow_matching_dim', 896),
-                # qwen2 层数 & KV 头数默认对齐主 VLM 的 model_cfg（n_layers, n_kv_heads），
-                # 如需单独调整，可以在 config 中显式设置 action_head_flow_matching_layers / _kv_heads
+                # qwen2 & KV defaultfor VLM model_cfg(n_layers, n_kv_heads),
+                # , in config inset action_head_flow_matching_layers / _kv_heads
                 qwen2_num_layers=getattr(self.config, 'action_head_flow_matching_layers', self.config.n_layers),
                 qwen2_num_heads=getattr(self.config, 'action_head_flow_matching_heads', 8),
                 qwen2_intermediate_size=getattr(self.config, 'action_head_flow_matching_intermediate_size', 4096),
                 qwen2_num_kv_heads=getattr(
                     self.config,
                     'action_head_flow_matching_kv_heads',
-                    # 默认使用主 VLM 的 n_kv_heads；若为 None，则回退到 n_heads
+                    # defaultuse VLM n_kv_heads; as None, fallbackto n_heads
                     self.config.n_kv_heads if self.config.n_kv_heads is not None else self.config.n_heads,
                 ),
             )
@@ -130,10 +130,10 @@ class AffordVLA(Molmo):
         self.tokenizer = config.get_tokenizer() 
 
         llm_dtype = next(self.transformer.parameters()).dtype
-        # AMD 下训练时将 FM 路径切换为 fp32，其余保持 bf16
+        # AMD under FM pathas fp32, bf16
         use_amd_fp32 = (self.training and hasattr(torch.version, "hip") and torch.version.hip is not None)
         self.head_dtype = torch.float32 if use_amd_fp32 else llm_dtype
-        # 确保 action_head 参数 dtype 与期望一致
+        # ensure action_head parameter dtype and
         self.action_head.to(self.head_dtype)
        
 
@@ -254,7 +254,7 @@ class AffordVLA(Molmo):
             # the caller must pass action_proprio via kwargs in predict stage
             state = kwargs.get('action_proprio', None)
             assert state is not None, "action_proprio is required for flow_matching inference"
-            # 基于 prefix_pad_masks 计算每个样本的有效前缀长度，避免 padding 干扰位置编码
+            # prefix_pad_masks computesample before, avoid padding
             if 'prefix_pad_masks' in kwargs and kwargs['prefix_pad_masks'] is not None:
                 ppm = kwargs['prefix_pad_masks']  # bool[B, P]
                 pos_offset = ppm.to(torch.int64).sum(dim=1)  # (B,)
@@ -330,7 +330,7 @@ class AffordVLA(Molmo):
     def find_action_token_positions(self, input_tokens):  
         """查找 action start 和 end token 在输入序列中的位置"""  
         
-        # 获取特殊标记的 ID  
+        # get ID
         tokenizer = self.config.get_tokenizer()  
         special_tokens = get_special_token_ids(tokenizer)  
         action_start_token_id = special_tokens[DEFAULT_ACT_START_TOKEN]  
@@ -338,30 +338,30 @@ class AffordVLA(Molmo):
         
         batch_size, seq_len = input_tokens.shape  
         
-        # 查找每个样本中的 action start 和 end 位置  
+        # samplein action start and end
         start_positions = []  
         end_positions = []  
         
         for batch_idx in range(batch_size):  
-            # 查找 action_start_token_id 的位置  
+            # action_start_token_id
             start_mask = (input_tokens[batch_idx] == action_start_token_id)  
             start_pos = torch.nonzero(start_mask, as_tuple=False)  
             
-            # 查找 action_end_token_id 的位置  
+            # action_end_token_id
             end_mask = (input_tokens[batch_idx] == action_end_token_id)  
             end_pos = torch.nonzero(end_mask, as_tuple=False)  
             
             if len(start_pos) > 0:  
                 print('! len(start_pos) > 0',start_pos) if len(start_pos) > 1 else None
-                start_positions.append(start_pos[-1].item())  # 取最后一个 start token  
+                start_positions.append(start_pos[-1].item())  # last start token
             else:  
-                start_positions.append(-1)  # 未找到  
+                start_positions.append(-1)  # to
                 
             if len(end_pos) > 0:  
                 print('! len(end_pos) > 0',end_pos) if len(end_pos) > 1 else None
-                end_positions.append(end_pos[-1].item())  # 取最后一个 end token  
+                end_positions.append(end_pos[-1].item())  # last end token
             else:  
-                end_positions.append(-1)  # 未找到  
+                end_positions.append(-1)  # to
 
         
         return start_positions, end_positions  
@@ -431,17 +431,17 @@ class AffordVLA(Molmo):
     # def extract_action_hidden_states_vectorized(self, hidden_states, action_start_pos, action_end_pos):  
     #     batch_size, seq_len, hidden_dim = hidden_states.shape  
         
-    #     # 假设所有样本的 action 长度相同  
+    # # allsample action
     #     action_length = action_end_pos[0] - action_start_pos[0]  
         
-    #     # 创建索引矩阵  
+    # # createindex
     #     batch_indices = torch.arange(batch_size, device=hidden_states.device).unsqueeze(1)  # (batch_size, 1)  
     #     position_offsets = torch.arange(action_length, device=hidden_states.device).unsqueeze(0)  # (1, action_length)  
         
-    #     # 计算每个样本的绝对位置索引  
+    # # computesample forPosition indices
     #     absolute_positions = action_start_pos.unsqueeze(1) + position_offsets  # (batch_size, action_length)  
         
-    #     # 使用高级索引提取  
+    # # useindexextract
     #     actions_hidden_states = hidden_states[batch_indices, absolute_positions]  # (batch_size, action_length, hidden_dim)  
         
     #     return actions_hidden_states
@@ -507,8 +507,8 @@ class AffordVLA(Molmo):
 
 
         # print('*' * 50, 'FSDP Wrap Policy', '*' * 50)
-        # 重要：正确处理action_head的包装
-        # 不要将action_head添加到size_based_module_to_wrap中，而是在策略函数中明确处理
+        # : processaction_head
+        # action_headaddtosize_based_module_to_wrapin, ininprocess
         # action_head_modules = set()
         # if hasattr(self, 'action_head'):
         #     action_head_modules = set(dict(self.action_head.named_modules()).values())
@@ -517,7 +517,7 @@ class AffordVLA(Molmo):
         #     if name.startswith("action_head")
         # }
         
-        #     # 收集action_head及其所有子模块
+        # # action_headandall
         #     def collect_action_head_modules(module, modules_set):
         #         modules_set.add(module)
         #         for child in module.children():
@@ -534,7 +534,7 @@ class AffordVLA(Molmo):
 
             def fsdp_wrap_fn(module, recurse: bool = True, nonwrapped_numel: int = 0):
                 del nonwrapped_numel
-                # # 明确排除action_head相关模块
+                # # action_head
                 # if module in action_head_modules:
                 #     return False
                 # module_name = getattr(module, "_fsdp_wrap_module_name", None)
@@ -553,7 +553,7 @@ class AffordVLA(Molmo):
             def fsdp_wrap_fn(module, recurse: bool = True, nonwrapped_numel: int = 0):
                 del nonwrapped_numel
                 
-                # # 明确排除action_head相关模块，避免冲突的包装策略
+                # # action_head, avoid
                 # if module in action_head_modules:
                 #     return False
                 # module_name = getattr(module, "_fsdp_wrap_module_name", None)
@@ -641,7 +641,7 @@ class AffordVLA(Molmo):
 
 
     # def get_action_head_parameters(self):  
-    #     """获取 action_head 的参数名称，用于参数冻结"""  
+    # """get action_head parametername, useparameter"""
     #     return [name for name, _ in self.action_head.named_parameters()]
 
 
@@ -796,7 +796,7 @@ class AffordVLA(Molmo):
         # shape: (batch_size, seq_len, d_model)
         # self.pos_offset = (input_ids != -1).to(torch.int32).sum(dim=1)
         if input_ids is not None:
-            # 将 -1 padding 映射为 0 行（pad 行）
+            # -1 padding as 0 row(pad row)
             input_ids_zero_mask = input_ids * (input_ids != -1).to(input_ids.dtype)
         x = self.transformer.wte(input_ids_zero_mask) if input_embeddings is None else input_embeddings  # type: ignore
 
@@ -1094,7 +1094,7 @@ class AffordVLA(Molmo):
                 # prefix_hidden = last_hidden_state[:, : start_idx + 1, :].to(llm_dtype)
 
                 assert self.config.use_proprio and action_proprio is not None, "flow_matching requires action_proprio"
-                # 训练阶段：基于 input_ids 估计有效前缀长度（忽略 -1 的 padding）
+                # : input_ids before( -1 padding)
                 pos_offset = (input_ids != -1).to(torch.int64).sum(dim=1)
                 pred = self.action_head.predict_vector_field(
                     attn_key_values,
@@ -1104,7 +1104,7 @@ class AffordVLA(Molmo):
                     pos_offset=pos_offset,
                 )
                 target = (noise - target_actions).to(dtype)
-                # 维持 FM 路径的 dtype（AMD 上为 fp32），交由后续 loss 在 fp32 计算
+                # FM path dtype(AMD as fp32), after loss in fp32 compute
                 predicted_actions = None
 
             return {  

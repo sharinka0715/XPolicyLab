@@ -12,20 +12,20 @@ except Exception:
 def _to_numpy(obj: Any) -> Any:
     """递归将 torch.Tensor / numpy 转成可 JSON 序列化类型"""
     if _HAS_TORCH and isinstance(obj, torch.Tensor):
-        # 兼容 CUDA/半精度，先转 CPU 再转 numpy
+        # Handle CUDA and half precision by moving to CPU before converting to NumPy
         return obj.detach().cpu().numpy()
     if isinstance(obj, np.ndarray):
-        return obj  # 留给 NumpyEncoder 处理
+        return obj  # Let NumpyEncoder handle this
     if isinstance(obj, np.generic):
         return obj.item()
     if isinstance(obj, bytes):
-        # bytes -> base64 编码，保证 JSON 可序列化
+        # Encode bytes as base64 so the payload stays JSON-serializable
         return {"__bytes__": True, "data": base64.b64encode(obj).decode("ascii")}
     if isinstance(obj, Mapping):
         return {k: _to_numpy(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
         return [_to_numpy(v) for v in obj]
-    # 尝试直接序列化，失败则转成 str
+    # Try direct serialization first; fall back to str on failure
     try:
         json.dumps(obj)
         return obj

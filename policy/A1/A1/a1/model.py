@@ -904,7 +904,7 @@ class OLMoQwenBlock(OLMoBlock):
         # Re-assemble all head outputs side-by-side.
         # att = att.transpose(1, 2).contiguous().view(B, T, self.config.d_model)
         
-        # reshape 回 (B, T, num_heads * head_dim) 后再做投影
+        # reshape (B, T, num_heads * head_dim) afterthen
         head_output_dim = self.head_dim * self.config.n_heads
         att = att.transpose(1, 2).contiguous().view(B, T, head_output_dim)
 

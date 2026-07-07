@@ -1,8 +1,8 @@
 # """
-# 字段说明：
-# --repo-id RoboCOIN \ #保存文件会以此为前缀命名
-# --root /mnt/workspace/.cache/modelscope/datasets/RoboCOIN/Split_aloha_fold_the_pants/ \ #对应的可视化lerobot dataset文件地址，地址下需要包含meta/文件夹以及meta/info.json
-# --mode local \ #可视化本地文件
+# :
+# --repo-id RoboCOIN \ #savefileasbefore
+# --root /mnt/workspace/.cache/modelscope/datasets/RoboCOIN/Split_aloha_fold_the_pants/ \ #for lerobot datasetfile, undermeta/folderandmeta/info.json
+# --mode local \ #file
 # """
 set -x
 CONDA_ENV_PATH="/mnt/workspace/yangyandan/miniforge3/envs/lerobot/bin/python"

@@ -17,7 +17,7 @@ def count_source_episodes(src_path: Path, task_type: str, embodiment: str, bench
     """
     counts = {"train": 0, "val": 0, "total": 0}
     
-    # RoboMIND 原始格式路径结构：src_path / benchmark / h5_{embodiment} / task_type / task_type / success_episodes / {split}
+    # RoboMIND path: src_path / benchmark / h5_{embodiment} / task_type / task_type / success_episodes / {split}
     task_path = src_path / benchmark / f"h5_{embodiment}" / task_type / task_type
     
     if not task_path.exists():
@@ -26,7 +26,7 @@ def count_source_episodes(src_path: Path, task_type: str, embodiment: str, bench
     for split in ["train", "val"]:
         split_path = task_path / "success_episodes" / split
         if split_path.exists():
-            # 统计所有 trajectory.hdf5 文件
+            # statisticsall trajectory.hdf5 file
             hdf5_files = list(split_path.glob("**/trajectory.hdf5"))
             counts[split] = len(hdf5_files)
     
@@ -44,17 +44,17 @@ def get_all_tasks(src_path: Path, embodiment: str, benchmark: str) -> list[str]:
     tasks = []
     for task_type in src_task_path.iterdir():
 
-        # 将路径拆分为部件列表
+        # pathascolumn
         task_type = list[str](task_type.parts)
         task_type.insert(-1, task_type[-1])
-        # 重组为新路径
+        # aspath
         task_type = Path(*task_type)
 
         if task_type.name.endswith(".tar.gz"):
             continue
         if task_type.is_dir():
-            # 检查是否有 success_episodes 目录
-            # 路径结构：task_type / task_type / success_episodes
+            # check success_episodes directory
+            # path: task_type / task_type / success_episodes
             success_path = task_type / task_type / "success_episodes"
             if success_path.exists():
                 tasks.append(task_type.name)
@@ -95,7 +95,7 @@ def check_all_tasks(
                 print(result)
                 all_results.append(result)
     
-    # 准备最终结果输出内容
+    # Translated comment
     result_lines = []
     
     if output_format == "table":
@@ -115,7 +115,7 @@ def check_all_tasks(
         
         result_lines.append("=" * 120)
         
-        # 统计信息
+        # statistics
         total_tasks = len(all_results)
         total_train = sum(r["train"] for r in all_results)
         total_val = sum(r["val"] for r in all_results)
@@ -127,7 +127,7 @@ def check_all_tasks(
         result_lines.append(f"  总 val episodes: {total_val}")
         result_lines.append(f"  总 episodes: {total_episodes}")
         
-        # 按 benchmark 统计
+        # by benchmark statistics
         result_lines.append(f"\n按 Benchmark 统计:")
         benchmark_stats = defaultdict(lambda: {"tasks": 0, "train": 0, "val": 0, "total": 0})
         for result in all_results:
@@ -142,7 +142,7 @@ def check_all_tasks(
             result_lines.append(f"    任务数: {stats['tasks']}")
             result_lines.append(f"    Train: {stats['train']}, Val: {stats['val']}, Total: {stats['total']}")
         
-        # 按 embodiment 统计
+        # by embodiment statistics
         result_lines.append(f"\n按 Embodiment 统计:")
         embodiment_stats = defaultdict(lambda: {"tasks": 0, "train": 0, "val": 0, "total": 0})
         for result in all_results:
@@ -163,7 +163,7 @@ def check_all_tasks(
         result_content = json.dumps(all_results, indent=2, ensure_ascii=False)
     
     elif output_format == "summary":
-        # 只显示有数据的任务
+        # onlydata task
         tasks_with_data = [r for r in all_results if r["total"] > 0]
         
         result_lines.append(f"找到 {len(tasks_with_data)} 个有数据的任务:")
@@ -173,7 +173,7 @@ def check_all_tasks(
                 f"train={result['train']}, val={result['val']}, total={result['total']}"
             )
         
-        # 显示没有数据的任务
+        # data task
         tasks_without_data = [r for r in all_results if r["total"] == 0]
         if tasks_without_data:
             result_lines.append(f"\n找到 {len(tasks_without_data)} 个没有数据的任务:")
@@ -182,10 +182,10 @@ def check_all_tasks(
         
         result_content = "\n".join(result_lines)
     
-    # 打印到标准输出（中间输出和最终结果都打印）
+    # printto(inandprint)
     print(result_content)
     
-    # 如果指定了输出文件，同时写入文件
+    # iffile, writefile
     if output_file:
         output_file.parent.mkdir(parents=True, exist_ok=True)
         with open(output_file, 'w', encoding='utf-8') as f:

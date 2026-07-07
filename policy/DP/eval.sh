@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-# ==================== 参数定义 ====================
+# ==================== Argument definitions ====================
 policy_name=DP
 bench_name=${1}
 task_name=${2}
@@ -25,7 +25,7 @@ policy_server_ip="localhost"
 
 additional_info="ckpt_name=${ckpt_name},action_type=${action_type}"
 
-# 定义 cleanup 函数以确保脚本退出时能正确清理后台进程
+# Define cleanup to terminate background processes when the script exits
 cleanup(){ [[ -n "${SERVER_PID:-}" ]] && echo -e "\033[31m[CLEANUP] Killing server PID=${SERVER_PID}\033[0m" && kill "${SERVER_PID}" 2>/dev/null || true; }
 trap cleanup EXIT
 

@@ -1,26 +1,26 @@
 #!/bin/bash
-# 分析内存不足问题
+# Translated comment
 
 echo "=========================================="
 echo "  内存不足问题分析"
 echo "=========================================="
 echo ""
 
-# 从错误日志分析
+# from
 echo "从 output1.txt 可以看到："
 echo "- 内存使用: 457.98GB / 480GB (95.4%)"
 echo "- 有多个 ray::save_as_lerobot_dataset 进程在运行"
 echo "- 每个进程占用 9-12GB 内存"
 echo ""
 
-# 计算当前配置下的问题
+# computecurrentconfigunder
 echo "=== 问题分析 ==="
 echo ""
 
 TOTAL_CPUS=128
 TOTAL_MEM_GB=480
-SAFE_MEM_GB=$((TOTAL_MEM_GB * 85 / 100))  # 85% 安全阈值
-MEM_PER_TASK=12  # 从日志看，每个任务实际占用 9-12GB
+SAFE_MEM_GB=$((TOTAL_MEM_GB * 85 / 100))  # 85% value
+MEM_PER_TASK=12  # from, taskuse 9-12GB
 
 echo "系统资源："
 echo "  - 总 CPU: ${TOTAL_CPUS} 核"

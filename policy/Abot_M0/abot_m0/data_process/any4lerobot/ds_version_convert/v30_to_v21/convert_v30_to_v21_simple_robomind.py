@@ -326,7 +326,7 @@ def _extract_video_segment(
     
 #  "-vf",
 #         f"select='gte(n\\,{start_frame})',setpts=PTS-STARTPTS",
-#         "-frames:v", str(end_frame - start_frame),  # 👈 关键：显式指定帧数
+# "-frames:v", str(end_frame - start_frame), # 👈 : frame
 
     try:
         result = subprocess.run(
@@ -597,7 +597,7 @@ def main():
     output_base_path = args.output_path
 
     input_path = input_base_path / args.task_id
-    # 将路径拆分为部件列表
+    # pathascolumn
     subname = list(input_base_path.parts)
     subname = "-".join(subname[-2:])
     subname = subname + "-" + args.task_id

@@ -216,7 +216,7 @@ def save_as_lerobot_dataset(task: tuple[dict, Path, str], src_path, benchmark, e
     if not save_depth:
         features = dict(filter(lambda item: "depth" not in item[0], features.items()))
     
-    # 如果不保存图片，从features中移除image类型的项（保留video类型用于视频编码）
+    # ifsave, fromfeaturesinimage (keepvideousevideo)
     if not save_images:
         features = {k: v for k, v in features.items() if v.get("dtype") != "image"}
    
@@ -242,10 +242,10 @@ def save_as_lerobot_dataset(task: tuple[dict, Path, str], src_path, benchmark, e
         else:
             action_config = {}
 
-        # 将路径拆分为部件列表
+        # pathascolumn
         parts = list(path.parts)
         parts.insert(-2, parts[-3])
-        # 重组为新路径
+        # aspath
         path = Path(*parts)
         print("1111111111111",path)
 
@@ -257,7 +257,7 @@ def save_as_lerobot_dataset(task: tuple[dict, Path, str], src_path, benchmark, e
                     
                     for frame_data in raw_dataset:
                         frame_data["task"] = task_instruction
-                        # 如果不保存图片，从frame_data中移除image类型的数据（保留video类型用于视频编码）
+                        # ifsave, fromframe_datainimage data(keepvideousevideo)
                         if not save_images:
                             frame_data_filtered = {k: v for k, v in frame_data.items() 
                                                  if k not in features or features.get(k, {}).get("dtype") != "image"}
@@ -319,13 +319,13 @@ def main(
         logging.info(f"Available CPUs: {cpus}, num_cpus_per_task: {cpus_per_task}")
         remote_task = ray.remote(save_as_lerobot_dataset).options(num_cpus=cpus_per_task)
 
-        # 已完成任务的记录文件
+        # completetask file
         completed_tasks_file = Path(output_path) / f".completed_tasks_{log_path}.txt"
         print(completed_tasks_file)
       
         completed_tasks = set()
         
-        # 读取已完成的任务列表（支持断点续传）
+        # readcomplete taskcolumn()
         if completed_tasks_file.exists():
             try:
                 with open(completed_tasks_file, 'r') as f:
@@ -334,21 +334,21 @@ def main(
             except Exception as e:
                 logging.warning(f"读取已完成任务列表失败 ({str(e)})，将重新开始")
 
-        # 收集所有任务
+        # alltask
         all_tasks = []
         for embodiment in embodiments:
             tasks = get_all_tasks(src_path / benchmark, output_path, embodiment)
             for task in tasks:
                 task_type, splits, local_dir, task_instruction = task
                 task_type = "2024_09_20_close_cabinet"
-                # 使用 task_type 作为唯一标识（格式：{embodiment}/{task_type}）
+                # use task_type as(: {embodiment}/{task_type})
                 task_id = f"{embodiment}/{task_type}"
                 all_tasks.append((task_id, task, embodiment))
         
         total_tasks = len(all_tasks)
         logging.info(f"Total tasks to process: {total_tasks}")
         
-        # 过滤掉已完成的任务
+        # complete task
         remaining_tasks = [
             (task_id, task, embodiment) 
             for task_id, task, embodiment in all_tasks 
@@ -358,7 +358,7 @@ def main(
         if skipped_tasks > 0:
             logging.info(f"跳过 {skipped_tasks} 个已完成的任务，剩余 {len(remaining_tasks)} 个任务需要处理")
         
-        # 提交任务
+        # task
         futures = []
         for task_id, task, embodiment in remaining_tasks:
             task_type, splits, local_dir, task_instruction = task
@@ -368,21 +368,21 @@ def main(
         logging.info(f"Submitted {len(futures)} tasks")
         
         
-        # 处理任务结果
+        # processtask
         for task_id, task_path, future in futures:
             try:
                 ray.get(future)
                 logging.info(f"Completed task: {task_id}")
-                # 记录成功完成的任务
+                # successcomplete task
                 completed_tasks.add(task_id)
-                # 确保目录存在
+                # ensuredirectoryin
                 completed_tasks_file.parent.mkdir(parents=True, exist_ok=True)
-                # 追加写入到文件（每次完成后立即写入，避免丢失）
+                # writetofile(completeafterwrite, avoid)
                 try:
                     with open(completed_tasks_file, 'a') as f:
                         f.write(f"{task_id}\n")
-                        f.flush()  # 立即刷新到磁盘
-                        os.fsync(f.fileno())  # 强制同步到磁盘
+                        f.flush()  # to
+                        os.fsync(f.fileno())  # synchronizeto
                 except Exception as e:
                     logging.warning(f"警告：写入已完成任务记录文件失败 ({str(e)})，但任务已成功完成")
             except Exception as e:
@@ -390,7 +390,7 @@ def main(
                 with open(f"{log_path}.txt", "a") as f:
                     f.write(f"{task_id}, exception details: {str(e)}\n")
         
-        # 打印最终统计信息
+        # printstatistics
         logging.info(f"\n{'='*60}")
         logging.info(f"任务处理完成！")
         logging.info(f"总共处理任务数: {len(remaining_tasks)}")

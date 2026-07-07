@@ -1,6 +1,6 @@
 # XPolicyLab deploy: policy server env=ABot; run setup_eval_policy_server.sh with this env.
 #!/usr/bin/env bash
-# Abot 上游需手动 clone ABot-Manipulation；本脚本在 ABot conda 中安装 XPolicyLab 依赖。
+# Abot clone ABot-Manipulation; in ABot conda in XPolicyLab .
 set -euo pipefail
 
 POLICY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

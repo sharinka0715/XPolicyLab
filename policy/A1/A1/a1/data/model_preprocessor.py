@@ -349,11 +349,11 @@ class MultiModalPreprocessor:
         return image
 
     def resize_image(self, image, output_size, is_training, rng):
-        # 添加对大图像的预处理
-        # MAX_IMAGE_SIZE = 4096  # 设置最大图像尺寸
+        # addforImage process
+        # MAX_IMAGE_SIZE = 4096 # setImage
         # h, w = image.shape[:2]
         
-        # # 如果图像太大，先进行预处理缩放
+        # # ifImage, firstrowprocess
         # if h > MAX_IMAGE_SIZE or w > MAX_IMAGE_SIZE:
         #     scale = MAX_IMAGE_SIZE / max(h, w)
         #     new_h = int(h * scale)

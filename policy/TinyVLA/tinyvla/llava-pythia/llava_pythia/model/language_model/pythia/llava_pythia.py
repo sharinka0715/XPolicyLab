@@ -86,7 +86,7 @@ class LlavaPythiaForCausalLM(GPTNeoXPreTrainedModel, LlavaMetaForCausalLM):
 
     def encode_images(self, images, proj=True):
         image_features = self.get_model().get_vision_tower()(images)
-        if proj:  # 默认true，则会执行
+        if proj:  # defaulttrue, row
             image_features = self.get_model().mm_projector(image_features)
         return image_features
 

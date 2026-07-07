@@ -1,11 +1,11 @@
 #!/bin/bash
-# 快速查看 CPU 使用情况
+# CPU use
 
 echo "=========================================="
 echo "  快速 CPU 监控"
 echo "=========================================="
 
-# 方法1: 使用 ps 查看所有相关进程（包括主进程和 worker）
+# method1: use ps allprocess(processand worker)
 echo "【方法1】主进程 CPU 使用:"
 ps aux | grep "[p]ython.*agibot_h5.py" | grep -v "ray::" | awk '{printf "PID: %-8s CPU: %5s%% MEM: %5s%%\n", $2, $3, $4}'
 

@@ -75,7 +75,7 @@ def save_rollout_video(rollout_dir, rollout_images, idx, success, task_descripti
                 # Create a new PIL Image for drawing
                 pil_img = Image.fromarray(value_array)
                 draw = ImageDraw.Draw(pil_img)
-                draw.text((10, 10), f"{key}", fill=(255, 255, 255))  # 使用白色文字更容易看清
+                draw.text((10, 10), f"{key}", fill=(255, 255, 255))  # use
                 image.append(np.array(pil_img))
             # horizontal concat
             image = np.concatenate(image, axis=1)

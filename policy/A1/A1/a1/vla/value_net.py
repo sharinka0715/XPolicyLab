@@ -153,7 +153,7 @@ class ActionValueNet(BaseValueNet):
             delta = get_delta(action[0], prev_action[0])
 
             return delta, action
-        # 这部分用于离线校准,mode='generate'
+        # This section is used for offline calibration,mode='generate'
         else:
             assert 0 not in self.exit_list
             # exits_feat = [feats[i] for i in [0]+self.exit_list] # (n_exit+1, bs * action_seq_len, lang_len, d)
@@ -176,39 +176,39 @@ class ActionValueNet(BaseValueNet):
             #     action = self.model.predict_actions_by_hidden_states_by_idx(feats[i], proprio, start_idx, end_idx)
             #     # self.exit_head.last_action = False
             #     if action.ndim == 3:  # (batch, seq, action_dim)
-            #         action = action[0]  # 取第一个batch（校准默认bs=1），此时形状为 (seq, action_dim)
-            #     exit_action.append(action)   # (exit+1, seq, dim) 或 (exit+1, bs, dim)
+            # action = action[0] # Take the first batch (calibration defaults to bs=1); the shape is (seq, action_dim)
+            #     exit_action.append(action)   # (exit+1, seq, dim) or (exit+1, bs, dim)
 
-            # 直接在 exit 维度上堆叠，不再引入额外的 size=1 维度
-            # exit_action_stack = torch.stack(exit_action)  # (exit+1, seq, dim) 或 (exit+1, bs, dim)
+            # Stack directly on the exit dimension without introducing an extra size-1 dimension
+            # exit_action_stack = torch.stack(exit_action)  # (exit+1, seq, dim) or (exit+1, bs, dim)
             
-            # 兼容两种输入：
-            # - hidden_states: Tensor 列表 (每层形状: (B, L, D)) → 向量化堆叠与一次性前向
-            # - attn_key_values (flow_matching): List[Tuple[Tensor, Tensor]] → 逐层截断 KV 并循环前向
+            # Support two input types:
+            # - hidden_states: Tensor column (shape per layer: (B, L, D)) → vectorized stacking and a single forward pass
+            # - attn_key_values (flow_matching): List[Tuple[Tensor, Tensor]] → truncate KV layer by layer and run forward in a loop
             selected_layers = [0] + self.exit_list
 
             if self.model.config.action_head != 'flow_matching':
-                # 向量化：将所有 exit 的隐藏态一次性送入动作头，减少前向调用次数
-                layer_hiddens = [feats[i] for i in selected_layers]  # 每个形状: (B, L, D)
+                # Vectorized: send hidden states from all exits to the action head at once to reduce forward calls
+                layer_hiddens = [feats[i] for i in selected_layers]  # each shape: (B, L, D)
                 # (E+1, B, L, D)
                 stacked_hidden = torch.stack(layer_hiddens, dim=0)
                 E_plus_1, B, L, D = stacked_hidden.shape
-                # 展平到批维度，变为 ((E+1)*B, L, D)
+                # Flatten into the batch dimension, becoming ((E+1)*B, L, D)
                 flat_hidden = stacked_hidden.flatten(0, 1)
                 actions_flat = self.model.predict_actions_by_hidden_states_by_idx(flat_hidden, start_idx, end_idx)
-                # 还原为 (E+1, B, ...)
+                # Restore to (E+1, B,...)
                 if actions_flat.ndim >= 3:
                     actions_stacked = actions_flat.reshape(E_plus_1, B, *actions_flat.shape[1:])
-                    # 仅取第一个 batch（与原始实现一致：校准默认 bs=1）=> 形状 (E+1, seq, dim)
+                    # Take only the first batch (matching the original implementation; calibration defaults to bs=1) => shape (E+1, seq, dim)
                     exit_action_stack = actions_stacked[:, 0]
                 else:
                     exit_action_stack = actions_flat.reshape(E_plus_1, B, -1)[:, 0]
             else:
-                # flow matching: feats 是按层的 (k, v) 序列
+                # flow matching: feats is layer-wise (k, v) column
                 actions_per_exit = []
                 for layer_idx in selected_layers:
-                    # 仅使用至第 layer_idx 层（含）的 KV 进行推理，模拟对应 exit
-                    # 把上一层得到的noise action作为初始状态，传递给下一层
+                    # Use KV up to and including layer_idx for inference to simulate the corresponding exit
+                    # Pass the noise action from the previous layer as the initial state to the next layer
                     kvs_i = feats[:layer_idx + 1]
                     actions_i = self.model.predict_actions_flow_matching(
                         kvs_i, proprio, pos_offset,
@@ -216,13 +216,13 @@ class ActionValueNet(BaseValueNet):
                     actions_per_exit.append(actions_i)
                 # (E+1, B, horizon, dim)
                 actions_stacked = torch.stack(actions_per_exit, dim=0)
-                # 仅取第一个 batch（与原始实现一致：校准默认 bs=1）=> 形状 (E+1, horizon, dim)
+                # Take only the first batch (matching the original implementation; calibration defaults to bs=1) => shape (E+1, horizon, dim)
                 exit_action_stack = actions_stacked[:, 0]
             
             prev_actions = exit_action_stack[:-1]  # (n_exit, ...)
             last_actions = exit_action_stack[1:]   # (n_exit, ...)
             delta = get_delta(prev_actions, last_actions)
-            # 将后两维展平为样本维度（兼容 (n_exit, seq) 或 (n_exit, bs*seq) 情况）
+            # Flatten the last two dimensions into the sample dimension (supports (n_exit, seq) or (n_exit, bs*seq))
             if delta.ndim >= 3:
                 delta = delta.flatten(1, 2)
             else:
@@ -385,14 +385,14 @@ def generate_action_values(
     device_id,
 ):
     
-    # 获取迭代总批次数：优先使用自定义属性，其次兼容标准 DataLoader 的 __len__
+    # Get the total number of batches: prefer a custom attribute, then fall back to standard DataLoader __len__
     # try:
-    #     num_batches_per_epoch = calvin_loader.num_batches  # 自定义 DataLoader 可能提供该属性
+    # num_batches_per_epoch = calvin_loader.num_batches # A custom DataLoader may provide this attribute
     # except AttributeError:
     #     try:
     num_batches_per_epoch = len(dataloader)
         # except TypeError:
-        #     num_batches_per_epoch = None  # 让 tqdm 自动推断
+        # num_batches_per_epoch = None # Let tqdm infer it automatically
 
     # cast_dtype = get_cast_dtype(args.precision)
 
@@ -428,7 +428,7 @@ def generate_action_values(
         
         # Use inference_mode (faster than no_grad) and AMP if enabled
         with torch.inference_mode():
-            # 统一使用 bfloat16 的 AMP（更稳），提升生成 KV 的数值稳定性
+            # Use bfloat16 AMP consistently for better stability and more stable generated KV values
             with torch.cuda.amp.autocast(dtype=torch.bfloat16, enabled=getattr(args, "amp", True)):
                 # normalized_actions = model.predict_actions(**batch)
                 outputs = model.forward(
@@ -507,7 +507,7 @@ def generate_action_values(
             #         vision_x=images,
             #         lang_x=input_ids,
             #         attention_mask=attention_mask,
-            #         # labels=labels,  # loss计算放在外面
+            # # labels=labels, # loss is computed outside
             #         vision_gripper=gripper,
             #         state_tensor=state_tensor if (args.use_state or args.sep_lm_head) else None,
             #         with_gripper_logits=True,

@@ -3,7 +3,7 @@ eval "$(conda shell.bash hook)"
 conda activate python3.10
 #in ppu
 # export SAPIEN_RENDER_ENGINE="cpu"
-# === 更改你的配置 ===
+# === config ===
 ABot_PATH=path_to_ABot_code
 policy_ckpt_path=path_to_checkpoint
 log_path=path_to_output_dir

@@ -1,4 +1,4 @@
-# 加载数据, 用来数据转化
+# Load data for data conversion
 import h5py, json, cv2, argparse
 import numpy as np
 

@@ -18,7 +18,7 @@ UTILS_DIR="${XPL_ROOT}/utils"
 
 policy_name="$(basename "${SCRIPT_DIR}")"
 yaml_file="${XPL_ROOT}/policy/${policy_name}/deploy.yml"
-# ckpt_name 直接是 checkpoints/ 下完整的 run 目录名（历史 6-tuple 目录名可整体传入）。
+# ckpt_name is the full run directory name under checkpoints/; historical 6-tuple directory names can be passed as-is.
 ckpt_setting="${ckpt_name}"
 
 action_dim=$(bash "${UTILS_DIR}/get_action_dim.sh" "${BENCH_ROOT}" "${env_cfg_type}")

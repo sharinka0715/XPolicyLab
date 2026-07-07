@@ -26,10 +26,10 @@ def read_video_pyav(video_path, resize_img):
     container = av.open(video_path)
     
     for frame in container.decode(video=0):
-        # 转为 RGB numpy array (H, W, C)
+        # as RGB numpy array (H, W, C)
         img = frame.to_rgb().to_ndarray()
         if hasattr(resize_img, '__call__'):
-            # 假设 resize_img 接受 numpy array (H, W, C) in [0,255], uint8, RGB
+            # resize_img numpy array (H, W, C) in [0,255], uint8, RGB
             resized = resize_img(img)
             frames.append(resized)
         else:
@@ -59,8 +59,8 @@ def visualize_dino(patch_features, img_path):
     orig_w, orig_h = (640, 480)
     pca_image = cv2.resize(
         pca_image,
-        (orig_w, orig_h),           # 目标尺寸 (width, height)
-        interpolation=cv2.INTER_LINEAR  # 双线性插值
+        (orig_w, orig_h),           # (width, height)
+        interpolation=cv2.INTER_LINEAR  # value
     )
     pca_image = (np.clip(pca_image, 0, 1) * 255).astype(np.uint8)
     img = Image.fromarray(pca_image)
@@ -115,7 +115,7 @@ def resize_img(rgb_obs):
 
 def prepare_inputs(state_stats, data_path, video_path, embodiment_id, tasks):
 
-    # === 1. 从 Parquet 读取元数据 ===
+    # === 1. from Parquet readdata ===
     df = pd.read_parquet(data_path)
 
     task_index = df['task_index']
@@ -129,18 +129,18 @@ def prepare_inputs(state_stats, data_path, video_path, embodiment_id, tasks):
     if "history_action" in df and not pd.isna(df["history_action"]):
         history_action = np.array(df["history_action"], dtype=np.float32)  # [T_hist, action_dim]
 
-    # === 2. 从视频加载帧 ===
+    # === 2. fromvideoloadframe ===
     frames = read_video_pyav(video_path, resize_img)
 
     if len(frames) == 0:
         raise ValueError(f"No frames loaded from {video_path}")
-    # === 3. 构造 example ===
+    # === 3. example ===
     examples = []
     for i in range(len(frames)):
         if i < len(lang):
             language = str(lang[i])
         else:
-            language = str(lang[0]) # for intern_genie1, intern genie1 被抽帧了，所以lang的长度时frames的 1 / 3
+            language = str(lang[0]) # for intern_genie1, intern genie1 frame, lang frames 1 / 3
         example = { 
             "image": [frames[i]],  
             "lang": language,

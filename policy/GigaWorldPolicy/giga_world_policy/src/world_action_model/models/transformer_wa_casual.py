@@ -703,7 +703,7 @@ class CasualWorldActionTransformer(
         state: Optional[Dict[str, Any]] = None,
         action: Optional[torch.Tensor] = None,
     ) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
-        # 1. 处理 LoRA 缩放 (与训练一致)
+        # 1. Handle LoRA scaling, matching training
         if attention_kwargs is not None:
             attention_kwargs = attention_kwargs.copy()
             lora_scale = attention_kwargs.pop("scale", 1.0)
@@ -713,8 +713,8 @@ class CasualWorldActionTransformer(
         if USE_PEFT_BACKEND:
             scale_lora_layers(self, lora_scale)
 
-        # 2. 准备视频维度信息
-        # 推理时 noisy_latents 是当前去噪步的输入
+        # 2. Prepare video dimension information
+        # noisy_latents current Input
         hidden_states = torch.cat([ref_latents, noisy_latents], dim=2)
         batch_size, num_channels, num_frames, height, width = hidden_states.shape
         p_t, p_h, p_w = self.config.patch_size
@@ -722,8 +722,8 @@ class CasualWorldActionTransformer(
         post_patch_height = height // p_h
         post_patch_width = width // p_w
 
-        # 3. 机器人数据编码 (State & Action)
-        # 注意：推理时 action 可能是全 0 噪声或者是上一采样步的结果
+        # 3. Robot data encoding (State & Action)
+        # Note: action 0 or
         action_states = self.action_encoder(action) 
         state_states = self.state_encoder(state)
         num_action_tokens = action_states.shape[1] 
@@ -732,17 +732,17 @@ class CasualWorldActionTransformer(
         num_noisy_tokens = (post_patch_num_frames - 1) * post_patch_width * post_patch_height
         extra_states = torch.cat([state_states, action_states], dim=1) 
 
-        # 4. 获取旋转位置嵌入 (RoPE)
-        # 必须在这里先计算原始 RoPE，然后再按交织顺序拼接
+        # 4. Get rotary position embeddings (RoPE)
+        # Compute the original RoPE here first, then concatenate in interleaved order
         rotary_emb = self.rope(hidden_states) 
         extra_rotary_emb = self.action_rope(extra_states) 
 
-        # 5. 视频数据 Patch 化
+        # 5. Patchify video data
         hidden_states = self.patch_embedding(hidden_states.to(torch.bfloat16))
         hidden_states = hidden_states.flatten(2).transpose(1, 2)
 
-        # 6. 核心：Token 重新排列 
-        # 顺序：[State(1), Ref_Video(spatial), Action(T), Noisy_Video(spatial * (T-1))]
+        # 6. Core: rearrange tokens
+        # Order: [State(1), Ref_Video(spatial), Action(T), Noisy_Video(spatial * (T-1))]
         hidden_states = torch.cat([
             extra_states[:, :num_state_tokens], 
             hidden_states[:, :num_ref_tokens], 
@@ -755,7 +755,7 @@ class CasualWorldActionTransformer(
             torch.cat([extra_rotary_emb[1][:, :num_state_tokens], rotary_emb[1][:, :num_ref_tokens], extra_rotary_emb[1][:, num_state_tokens:], rotary_emb[1][:, num_ref_tokens:]], dim=1)
         )
 
-        # 7. 时间步与文本条件注入 (独立 action embedder)
+        # 7. timeandtext (independent action embedder)
         s_r_end = num_state_tokens + num_ref_tokens
         action_end = s_r_end + num_action_tokens
 
@@ -804,23 +804,23 @@ class CasualWorldActionTransformer(
         if encoder_hidden_states_image is not None:
             encoder_hidden_states = torch.concat([encoder_hidden_states_image, encoder_hidden_states], dim=1)
 
-        # 8. 构造推理掩码 (保持因果特性)
+        # 8. Build inference mask (preserve causal behavior)
         L = hidden_states.shape[1]
         device = hidden_states.device
         mask = torch.zeros((L, L), device=device)
         
-        # 限制注意力：过去不能看到未来
+        # Limit attention: past tokens cannot see future tokens
         mask[s_r_end:action_end, action_end:] = float("-inf")
         mask[:s_r_end, s_r_end:] = float("-inf")
         
         self_attention_mask = mask.unsqueeze(0).unsqueeze(0).expand(batch_size, self.config.num_attention_heads, L, L)
         self_attention_mask = self_attention_mask.to(dtype=hidden_states.dtype)
 
-        # 9. 执行 Transformer Block
+        # 9. Run Transformer block
         for block in self.blocks:
             hidden_states = block(hidden_states, encoder_hidden_states, timestep_proj, rotary_emb, self_attention_mask)
 
-        # 10. 归一化与调制
+        # 10. Normalization and modulation
         if temb.ndim == 3:
             shift, scale = (self.scale_shift_table.unsqueeze(0).to(temb.device) + temb.unsqueeze(2)).chunk(2, dim=2)
             shift, scale = shift.squeeze(2), scale.squeeze(2)
@@ -830,17 +830,17 @@ class CasualWorldActionTransformer(
         shift, scale = shift.to(hidden_states.device), scale.to(hidden_states.device)
         hidden_states = (self.norm_out(hidden_states.float()) * (1 + scale) + shift).type_as(hidden_states)
 
-        # 11. 拆分输出头
-        # 提取 Action
+        # 11. Split output heads
+        # Extract action
         pred_action_states = hidden_states[:, s_r_end:action_end]
         action_pred = self.action_decoder(pred_action_states)
 
-        # 提取并还原视频 Latents
-        # 重新拼接 Ref 部分和去噪后的未来部分
+        # Extract and restore video latents
+        # Concatenate the Ref part and denoised future part again
         video_hidden = torch.cat([hidden_states[:, num_state_tokens:s_r_end], hidden_states[:, action_end:]], dim=1)
         video_output = self.proj_out(video_hidden)
 
-        # Unpatchify 还原为 [B, C, T, H, W]
+        # Unpatchify Restore to [B, C, T, H, W]
         video_output = video_output.reshape(
             batch_size, post_patch_num_frames, post_patch_height, post_patch_width, p_t, p_h, p_w, -1
         )
@@ -853,7 +853,7 @@ class CasualWorldActionTransformer(
         if not return_dict:
             return output, action_pred
 
-        return Transformer2DModelOutput(sample=output) # 注意：如需同时拿到 action，通常在采样器层面处理
+        return Transformer2DModelOutput(sample=output) # Note: to also get action, usually handle it at the sampler level
 
     def _forward_inference_action_only(
         self,
@@ -867,7 +867,7 @@ class CasualWorldActionTransformer(
         state: Optional[Dict[str, Any]] = None,
         action: Optional[torch.Tensor] = None,
     ) -> Union[torch.Tensor, Dict[str, torch.Tensor]]:
-        # 1. 处理 LoRA 缩放 (与训练一致)
+        # 1. Handle LoRA scaling, matching training
         if attention_kwargs is not None:
             attention_kwargs = attention_kwargs.copy()
             lora_scale = attention_kwargs.pop("scale", 1.0)
@@ -877,8 +877,8 @@ class CasualWorldActionTransformer(
         if USE_PEFT_BACKEND:
             scale_lora_layers(self, lora_scale)
 
-        # 2. 准备视频维度信息
-        # 推理时 noisy_latents 是当前去噪步的输入
+        # 2. Prepare video dimension information
+        # noisy_latents current Input
         hidden_states = torch.cat([ref_latents, noisy_latents], dim=2)
         batch_size, num_channels, num_frames, height, width = hidden_states.shape
         p_t, p_h, p_w = self.config.patch_size
@@ -886,8 +886,8 @@ class CasualWorldActionTransformer(
         post_patch_height = height // p_h
         post_patch_width = width // p_w
 
-        # 3. 机器人数据编码 (State & Action)
-        # 注意：推理时 action 可能是全 0 噪声或者是上一采样步的结果
+        # 3. Robot data encoding (State & Action)
+        # Note: action 0 or
         action_states = self.action_encoder(action) 
         state_states = self.state_encoder(state)
         num_action_tokens = action_states.shape[1] 
@@ -896,17 +896,17 @@ class CasualWorldActionTransformer(
         num_noisy_tokens = (post_patch_num_frames - 1) * post_patch_width * post_patch_height
         extra_states = torch.cat([state_states, action_states], dim=1) 
 
-        # 4. 获取旋转位置嵌入 (RoPE)
-        # 必须在这里先计算原始 RoPE，然后再按交织顺序拼接
+        # 4. Get rotary position embeddings (RoPE)
+        # Compute the original RoPE here first, then concatenate in interleaved order
         rotary_emb = self.rope(hidden_states) 
         extra_rotary_emb = self.action_rope(extra_states) 
 
-        # 5. 视频数据 Patch 化
+        # 5. Patchify video data
         hidden_states = self.patch_embedding(hidden_states.to(torch.bfloat16))
         hidden_states = hidden_states.flatten(2).transpose(1, 2)
 
-        # 6. 核心：Token 重新排列 
-        # 顺序：[State(1), Ref_Video(spatial), Action(T), Noisy_Video(spatial * (T-1))]
+        # 6. Core: rearrange tokens
+        # Order: [State(1), Ref_Video(spatial), Action(T), Noisy_Video(spatial * (T-1))]
         hidden_states = torch.cat([
             extra_states[:, :num_state_tokens], 
             hidden_states[:, :num_ref_tokens], 
@@ -920,7 +920,7 @@ class CasualWorldActionTransformer(
         )
 
         timestep = timestep[:, :hidden_states.shape[1]] 
-        # 7. 时间步与文本条件注入 (独立 action embedder)
+        # 7. timeandtext (independent action embedder)
         s_r_end = num_state_tokens + num_ref_tokens
         action_end = s_r_end + num_action_tokens
 
@@ -969,22 +969,22 @@ class CasualWorldActionTransformer(
         if encoder_hidden_states_image is not None:
             encoder_hidden_states = torch.concat([encoder_hidden_states_image, encoder_hidden_states], dim=1)
 
-        # 8. 构造推理掩码 (保持因果特性)
+        # 8. Build inference mask (preserve causal behavior)
         L = hidden_states.shape[1]
         device = hidden_states.device
         mask = torch.zeros((L, L), device=device)
         
-        # 限制注意力：过去不能看到未来
+        # Limit attention: past tokens cannot see future tokens
         # mask[s_r_end:action_end, action_end:] = float("-inf")
         mask[:s_r_end, s_r_end:] = float("-inf")
         
         self_attention_mask = mask.unsqueeze(0).unsqueeze(0).expand(batch_size, self.config.num_attention_heads, L, L)
         self_attention_mask = self_attention_mask.to(dtype=hidden_states.dtype)
 
-        # 9. 执行 Transformer Block
+        # 9. Run Transformer block
         for block in self.blocks:
             hidden_states = block(hidden_states, encoder_hidden_states, timestep_proj, rotary_emb, self_attention_mask)
-        # 10. 归一化与调制
+        # 10. Normalization and modulation
         if temb.ndim == 3:
             shift, scale = (self.scale_shift_table.unsqueeze(0).to(temb.device) + temb.unsqueeze(2)).chunk(2, dim=2)
             shift, scale = shift.squeeze(2), scale.squeeze(2)
@@ -994,18 +994,18 @@ class CasualWorldActionTransformer(
         shift, scale = shift.to(hidden_states.device), scale.to(hidden_states.device)
         hidden_states = (self.norm_out(hidden_states.float()) * (1 + scale) + shift).type_as(hidden_states)
 
-        # 11. 拆分输出头
-        # 提取 Action
+        # 11. Split output heads
+        # Extract action
         pred_action_states = hidden_states[:, s_r_end:action_end]
         action_pred = self.action_decoder(pred_action_states)
         
         # breakpoint()
-        # # 提取并还原视频 Latents
-        # # 重新拼接 Ref 部分和去噪后的未来部分
+        # # Extract and restore video latents
+        # # Concatenate the Ref part and denoised future part again
         # video_hidden = torch.cat([hidden_states[:, num_state_tokens:s_r_end], hidden_states[:, action_end:]], dim=1)
         # video_output = self.proj_out(video_hidden)
 
-        # # Unpatchify 还原为 [B, C, T, H, W]
+        # # Unpatchify Restore to [B, C, T, H, W]
         # video_output = video_output.reshape(
         #     batch_size, post_patch_num_frames, post_patch_height, post_patch_width, p_t, p_h, p_w, -1
         # )
@@ -1018,7 +1018,7 @@ class CasualWorldActionTransformer(
         if not return_dict:
             return action_pred
 
-        return Transformer2DModelOutput(sample=None) # 注意：如需同时拿到 action，通常在采样器层面处
+        return Transformer2DModelOutput(sample=None) # Note: to also get action, usually handle it at the sampler level
 
     def _forward_train(
         self,

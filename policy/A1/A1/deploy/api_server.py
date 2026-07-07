@@ -114,7 +114,7 @@ def load_vla_model(checkpoint_path: str, fsdp: bool = False,seed=6198) -> tuple:
 
     cfg = EvalConfig(
         max_crops_override=None,
-        # evaluations=[eval_config], 不要这个数据集加载的参数
+        # evaluations=[eval_config], Do not include this dataset-loading argument
         load_path=checkpoint_path,
         seed=seed,
         device_inf_eval_batch_size=4,
@@ -147,7 +147,7 @@ def load_vla_model(checkpoint_path: str, fsdp: bool = False,seed=6198) -> tuple:
 
         model_cfg = config.model
         
-        # 去掉原来路径pretrained_image_encoders和pretrained_llms之前的部分，改成环境变量
+        # pathpretrained_image_encodersandpretrained_llmsbefore , environment variables
         
         model_cfg.vit_load_path = os.path.join(os.environ.get("DATA_DIR", ""), "pretrained_image_encoders",os.path.basename(model_cfg.vit_load_path))
         model_cfg.llm_load_path = os.path.join(os.environ.get("DATA_DIR", ""), "pretrained_llms",os.path.basename(model_cfg.llm_load_path))
@@ -176,7 +176,7 @@ def load_vla_model(checkpoint_path: str, fsdp: bool = False,seed=6198) -> tuple:
 
         # if config.use_lora:
         #     if config.lora_llm:
-        #         merge_lora(olmo_model.transformer) # merge olmo_model会怎么样
+        # merge_lora(olmo_model.transformer) # what happens if olmo_model is merged
 
         
         model = model.to(device)
@@ -452,8 +452,8 @@ def main():
     # Start server
     log.info(f"Starting server on {args.host}:{args.port}")
     
-    # 使用已创建的 app 实例启动，以确保模型保持在提供服务的同一进程中
-    # 注意：当传入 app 实例时，uvicorn 不支持多进程 workers>1，且 reload 需要导入字符串。
+    # Start with the already-created app instance so the model stays in the serving process
+    # Note: when passing an app instance, uvicorn does not support multi-process workers > 1, and reload requires an import string.
     if args.reload:
         log.warning("--reload 仅在使用导入字符串时可用，已自动禁用 reload。")
     if args.workers != 1:

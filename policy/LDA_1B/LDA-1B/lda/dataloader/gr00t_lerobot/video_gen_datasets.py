@@ -56,7 +56,7 @@ class VideoTaskSingleDataset(Dataset):
         )
         self.target_fps = target_fps
 
-        # 视频 + task
+        # video + task
         all_video_paths = sorted(glob.glob(os.path.join(trajectory_root, "**", "*.mp4"), recursive=True))
 
         self.video_paths = []
@@ -74,14 +74,14 @@ class VideoTaskSingleDataset(Dataset):
             build_metadata_cache(self.video_paths, metadata_cache_path)
         with open(metadata_cache_path, "rb") as f:
             all_metadata = pickle.load(f)
-        # 确保顺序一致
+        # ensureOrder
         metadata_list = [all_metadata[vp] for vp in self.video_paths]
 
         # timestamps & trajectory_lengths
         self.timestamps = []
         self.trajectory_lengths = []
         for video_path, info in zip(self.video_paths, metadata_list):
-            # 对应的 JSON 文件
+            # for JSON file
             # json_path = os.path.splitext(video_path)[0] + ".json"
             # if not os.path.exists(json_path):
             #     raise RuntimeError(f"Cannot find json file {json_path} for video {video_path}")
@@ -102,7 +102,7 @@ class VideoTaskSingleDataset(Dataset):
             self.trajectory_lengths.append(len(ts))
         self.trajectory_lengths = np.array(self.trajectory_lengths)
 
-        # 轨迹 id
+        # id
         self.all_steps = []
         self.trajectory_ids = list(range(len(self.video_paths)))
         for trajectory_id in self.trajectory_ids:
@@ -163,22 +163,22 @@ class VideoTaskSingleDataset(Dataset):
         ts = self.timestamps[trajectory_id][step_indices]
         n_frames = len(ts)
         data = {}
-        # 视频
+        # video
         for video_key in self.modality_keys["video"]:
             data[video_key] = self.get_video_frames(self.video_paths[trajectory_id], ts)
         
-        # 未来帧
+        # frame
         future_step_indices = self.delta_indices["future_video"] + step
         future_step_indices = self.restric_timestamps(future_step_indices, trajectory_id)
         future_ts = self.timestamps[trajectory_id][future_step_indices]
         for future_video_key in self.modality_keys["future_video"]:
             data[future_video_key] = self.get_video_frames(self.video_paths[trajectory_id], future_ts)
 
-        # 语言
+        # Translated comment
         for lang_key in self.modality_keys.get("language", []):
             data[lang_key] = [self.task_descriptions[trajectory_id]]
 
-        # 其他模态占位
+        # Translated comment
         for action_key in self.modality_keys.get("action", []):
             data[action_key] = np.zeros((len(self.delta_indices['action']), 1), dtype=np.float32)
         for state_key in self.modality_keys.get("state", []):

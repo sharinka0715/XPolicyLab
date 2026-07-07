@@ -106,7 +106,7 @@ def _ensure_finite(name: str, array, context: Dict[str, Any] = None) -> None:
 
 def convert_gripper_qpos_to_1d(gripper_qpos_2d):
     """将2维夹爪关节位置转换为夹爪开合距离"""
-    # 计算两个夹爪指间的距离
+    # Compute the distance between the two gripper fingers
     return abs(gripper_qpos_2d[:,0] - gripper_qpos_2d[:,1])
 
 @dataclass
@@ -125,11 +125,11 @@ class RLDSBatchTransform:
         proprio = rlds_batch["observation"]["proprio"]
         # print(f"*** action.shape: {action.shape}, proprio.shape: {proprio.shape}")
         # if action and proprio dim samller than ACTION_DIM and PROPRIO_DIM, pad them to the same shape
-        # 记录原始动作维度，计算需要padding的长度
+        # Record the original action dimension and compute the required padding length
         original_action_dim = action.shape[-1]
         pad_len_action = self.fixed_action_dim - original_action_dim
         if self.pad_action_and_proprio and pad_len_action > 0:
-            # 仅对最后一维（特征维）进行padding到配置维度，时间维保持不变
+            # onlyforlast()rowpaddingtoconfigdimension, time
             action = np.pad(action, ((0, 0), (0, pad_len_action)), mode='constant')
         if self.pad_action_and_proprio and proprio.shape[-1] < self.fixed_action_dim:
             pad_len_proprio = self.fixed_action_dim - proprio.shape[-1]
@@ -169,7 +169,7 @@ class RLDSBatchTransform:
         if self.use_proprio:
             _ensure_finite("proprio", proprio, {"dataset": dataset_name})
         
-        # 生成与动作同形状的padding掩码，pad位置标记为True
+        # generateandaction padding mask, pad positionsasTrue
         action_pad_mask = np.zeros_like(action, dtype=bool)
         if pad_len_action > 0:
             action_pad_mask[:, -pad_len_action:] = True
@@ -210,32 +210,32 @@ class RLDSBatchTransform:
 @dataclass
 class DiTActionRLDSBatchTransform(RLDSBatchTransform):
     """Batch transform for DiT Action RLDS dataset."""
-    tokenizer: Any = None  # 文本tokenizer
-    processor: Any = None  # 图像processor
-    max_text_length: int = 1024  # 文本最大长度
+    tokenizer: Any = None  # Text tokenizer
+    processor: Any = None  # Imageprocessor
+    max_text_length: int = 1024  # Maximum text length
 
     def __call__(self, rlds_batch: Dict[str, Any]) -> Dict[str, Any]:
         """调用父类方法获取基础数据，然后添加 DiffusionTransformerAction 需要的处理"""
-        # 先调用父类的处理方法获取基础数据
+        # Call the parent processing method first to get base data
         base_result = super().__call__(rlds_batch)
         
-        # 提取需要进一步处理的数据
+        # Extract data that needs further processing
         images = base_result["images"] if "images" in base_result else [base_result["image"],]
         # [image_primary, image_wrist]
         # question = base_result["question"]
-        question = base_result["metadata"]["instruction"]  # 使用instruction作为问题
+        question = base_result["metadata"]["instruction"]  # Use instruction as the question
 
-        # 处理图像 - 转换为PIL格式并使用processor处理
+        # Process image - Convert toPILuseprocessorprocess
         pil_images = []
         for img in images:
             if isinstance(img, np.ndarray):
-                # 确保是uint8格式
+                # Ensure uint8 format
                 if img.dtype != np.uint8:
                     img = (img * 255).astype(np.uint8) if img.max() <= 1.0 else img.astype(np.uint8)
                 pil_images.append(Image.fromarray(img))
             else:
                 pil_images.append(img)
-        # 使用processor处理图像
+        # useprocessorProcess image
         if self.processor is not None:
             if len(pil_images) == 1:
                 processed_images = self.processor(images=pil_images[0], return_tensors="pt")
@@ -244,21 +244,21 @@ class DiTActionRLDSBatchTransform(RLDSBatchTransform):
         # print("***** processed_images keys:", processed_images.keys())
         base_result["pixel_values"] = processed_images["pixel_values"]
 
-        # 使用tokenizer处理文本
+        # Process text with the tokenizer
         if self.tokenizer is not None:
             # tokenized_text = self.tokenizer(question,padding="longest",return_tensors="pt") #max_length=self.max_text_length,
             tokenized_text = self.tokenizer(question, padding="max_length", max_length=self.max_text_length,return_tensors="pt") 
-            # 调试：打印tokenized_text的键
+            # Debug: print tokenized_text keys
             # print("***** tokenized_text keys:", tokenized_text.keys())
             # print("***** tokenized_text attention mask dtype:", tokenized_text["attention_mask"].dtype) # torch.Size([1, 1024]) torch.int64
-            # 添加tokenized文本信息
+            # Add tokenized text information
             base_result["input_ids"] = tokenized_text["input_ids"].squeeze()
             #'attention_mask': tensor([[1, 1, 1,  ..., 0, 0, 0]])})
             base_result["text_attention_mask"] = tokenized_text.get("attention_mask", None)
         
         return base_result
 
-# 创建统一的Batch Transform for ModelSelector
+# Create a unified batch transform for ModelSelector
 class ModelSelectorBatchTransform(RLDSBatchTransform):
     """统一的batch transform，同时支持AffordVLA和DiTAction的数据格式"""
     
@@ -269,10 +269,10 @@ class ModelSelectorBatchTransform(RLDSBatchTransform):
         self.max_text_length = max_text_length
     
     def __call__(self, rlds_batch: Dict[str, Any]) -> Dict[str, Any]:
-        # 先调用父类方法获取基础数据
+        # firstusemethodgetdata
         result = super().__call__(rlds_batch)
         
-        # 处理图像 - 为DiTAction准备pixel_values
+        # Process image - prepare pixel_values for DiTAction
         # if self.processor is not None and "images" in result:
             #deep copy images, avoid modifying the original images
         images = result["images"].copy() if "images" in result else [result["image"].copy(),]
@@ -295,7 +295,7 @@ class ModelSelectorBatchTransform(RLDSBatchTransform):
         
         result["pixel_values"] = processed_images["pixel_values"]
         
-        # 处理文本 - 为DiTAction准备tokenized文本
+        # processtext - prepare tokenized text for DiTAction
         if self.tokenizer is not None:
             instruction = result["metadata"]["instruction"]
             tokenized_text = self.tokenizer(
@@ -304,7 +304,7 @@ class ModelSelectorBatchTransform(RLDSBatchTransform):
                 max_length=self.max_text_length,
                 return_tensors="pt"
             )
-            # 保持二维形状以便后续 collate 按 batch 维拼接成 (B, L)
+            # Keep the 2D shape so later collate can concatenate along the batch dimension into (B, L)
             result["input_ids_dit"] = tokenized_text["input_ids"] # squeeze()
             result["text_attention_mask"] = tokenized_text.get("attention_mask", None)
         
@@ -326,10 +326,10 @@ class RLDSDataset(Dataset,IterableDataset):
         shuffle_buffer_size: int = 256_000,
         train: bool = True,
         image_aug: bool = False,
-        single_sample_mode: bool = False,  # 新增参数
+        single_sample_mode: bool = False,  # New parameter
         sample_ratio: float = 1.0,
         sample_index: list = [0,10,20,30,40,50,60,70,80,90,100,101,102,103,104,105,106,
-                              107,108,109,110,111,112,113,114,115,116,117,188,119,120,121,122],  # 新增参数，指定要使用的样本索引
+                              107,108,109,110,111,112,113,114,115,116,117,188,119,120,121,122],  # New parameter, Specify sample indices to use
     ) -> None:
         """Lightweight wrapper around RLDS TFDS Pipeline for use with PyTorch/OpenVLA Data Loaders."""
         assert data_root_dir is not None, "data_root_dir must be specified for RLDSDataset"
@@ -340,12 +340,12 @@ class RLDSDataset(Dataset,IterableDataset):
         self.traj_read_threads = traj_read_threads
         self.normalization_type = normalization_type
         self.num_actions_chunk = num_actions_chunk
-        # 确保在后续逻辑中可以访问该字段
+        # Ensure this field is accessible in later logic
         # self.data_additional_opensource_data = data_additional_opensource_data
 
         self.single_sample_mode = single_sample_mode
         self.sample_index = sample_index
-        self._cached_samples = {}  # 缓存单个样本
+        self._cached_samples = {}  # Cache single samples
 
         # Configure RLDS Dataset(s)
         if self.data_mix in OXE_NAMED_MIXTURES:
@@ -428,27 +428,27 @@ class RLDSDataset(Dataset,IterableDataset):
             self.dataset = self.dataset.take(int(self.dataset_length * sample_ratio))
             self.dataset_length = int(self.dataset_length * sample_ratio)
 
-        # 如果是单样本模式，提前获取并缓存样本
+        # If in single-sample mode, fetch and cache samples in advance
         if self.single_sample_mode:
             self._cache_selected_samples()
 
         print("******", "after RLDSDataset initialization!")
 
     # def _cache_single_sample(self):
-    #     """缓存指定索引的单个样本"""
+    # """Cache a single sample at the specified index"""
     #     iterator = self.dataset.as_numpy_iterator()
     #     try:
-    #         # 跳到指定的样本
+    # # Jump to the specified sample
     #         rlds_batch = next(islice(iterator, self.sample_index, None))
     #         self._cached_sample = self.batch_transform(rlds_batch)
-    #         print(f"已缓存第 {self.sample_index} 个样本用于单样本测试")
+    # print(f"Cached sample {self.sample_index} for single-sample testing")
     #     except StopIteration:
-    #         raise IndexError(f"样本索引 {self.sample_index} 超出范围 (数据集长度={self.dataset_length})")
+    # raise IndexError(f"Sample index {self.sample_index} out of range (dataset length={self.dataset_length})")
 
 
     def _cache_selected_samples(self):
         """缓存指定索引列表中的样本"""
-        # 对索引进行排序，确保按顺序读取
+        # forindexrow, ensurebyOrderread
         sorted_indices = sorted(self.sample_index)
         iterator = self.dataset.as_numpy_iterator()
         
@@ -461,9 +461,9 @@ class RLDSDataset(Dataset,IterableDataset):
                     transformed_sample = self.batch_transform(rlds_batch)
                     self._cached_samples[current_idx] = transformed_sample
                     cached_count += 1
-                    # print(f"已缓存第 {current_idx} 个样本")
+                    # print(f"Cached sample {current_idx} sample")
                     
-                    # 如果已经缓存了所有需要的样本，可以提前退出
+                    # If all requested samples are cached, exit early
                     if cached_count == len(sorted_indices):
                         break
                 
@@ -472,7 +472,7 @@ class RLDSDataset(Dataset,IterableDataset):
         except StopIteration:
             pass
         
-        # 检查是否所有请求的样本都已缓存
+        # Check whether all requested samples have been cached
         missing_indices = set(self.sample_index) - set(self._cached_samples.keys())
         if missing_indices:
             raise IndexError(f"样本索引 {missing_indices} 超出范围 (数据集长度={self.dataset_length})")
@@ -486,7 +486,7 @@ class RLDSDataset(Dataset,IterableDataset):
     # how to use this inferface
     def __iter__(self) -> Dict[str, Any]:
         if self.single_sample_mode:
-            # 循环返回缓存的样本列表
+            # Return the cached sample list cyclically
             while True:
                 # for idx in self.sample_index:
                 #     yield self._cached_samples[idx]
@@ -507,8 +507,8 @@ class RLDSDataset(Dataset,IterableDataset):
                 #     # print(f"convert proprio shape from {proprio.shape} to 1D")
 
                 #     proprio_lastone = convert_gripper_qpos_to_1d(proprio[:,-2:])
-                #     batch_trans["proprio"] = proprio[:,:-1] # 去掉最后一个关节位置
-                #     batch_trans["proprio"][:,-1] = proprio_lastone  # 保留最后一个夹爪关节位置作为夹爪开合距离
+                # batch_trans["proprio"] = proprio[:,:-1] # Remove the last joint position
+                # batch_trans["proprio"][:,-1] = proprio_lastone # Keep the last gripper joint position as the gripper opening distance
                 yield batch_trans
 
     def __len__(self) -> int:
@@ -523,7 +523,7 @@ class RLDSDataset(Dataset,IterableDataset):
         raise NotImplementedError("Do not use get(), It is time-consuming, use __iter__ instead!")
         
         # if self.single_sample_mode:
-        #     # 使用模运算循环访问缓存的样本
+        # # Use modulo arithmetic to cycle through cached samples
         #     # sample_idx = self.sample_index[idx % len(self.sample_index)]
         #     sample_idx = rng.choice(self.sample_index)
         #     return self._cached_samples[sample_idx]
@@ -584,17 +584,17 @@ class EpisodicPerStepRLDSDataset(RLDSDataset):
         )
 
     def __iter__(self):
-        # 逐“轨迹”读取，再拆成逐“帧”返回
+        # Read by trajectory, then split and return frame by frame
         for episode_index, rlds_batch in enumerate(self.dataset.as_numpy_iterator()):
             T = rlds_batch["action"].shape[0]
             for i in range(T):
-                # 取第 i 个时间步
+                # i time
                 step = tree_map(lambda x: x[i], rlds_batch)
 
-                # 先做原有 batch_transform
+                # Apply the original batch_transform first
                 out = self.batch_transform(step)
 
-                # 附加 episode_index
+                # Append episode_index
                 out["episode_index"] = int(episode_index)
 
                 yield out
@@ -663,8 +663,8 @@ class EpisodicPerStepMultiRLDSDataset(RLDSDataset):
                         # print(f"convert proprio shape from {proprio.shape} to 1D")
 
                         proprio_lastone = convert_gripper_qpos_to_1d(proprio[:,-2:])
-                        out["proprio"] = proprio[:,:-1] # 去掉最后一个关节位置
-                        out["proprio"][:,-1] = proprio_lastone  # 保留最后一个夹爪关节位置作为夹爪开合距离
+                        out["proprio"] = proprio[:,:-1] # Remove the last joint position
+                        out["proprio"][:,-1] = proprio_lastone  # Keep the last gripper joint position as the gripper opening distance
 
                     yield out
 
@@ -762,7 +762,7 @@ def test_dataloading():
         break
 
 def test_diffusion_dataset_with_inheritance():
-    # 假设您已经有了tokenizer和processor
+    # Assume tokenizer and processor are already available
     from transformers import AutoTokenizer, AutoProcessor,SiglipTextModel,SiglipVisionModel
     
     print('*** Using SiglipTextModel and SiglipVisionModel for testing ***')
@@ -776,13 +776,13 @@ def test_diffusion_dataset_with_inheritance():
     # vision_model = SiglipVisionModel.from_pretrained("/mnt/data/zhangjian/google/siglip-so400m-patch14-384")
     # print("Text and Vision models loaded successfully.")
     
-    # 创建继承版本的transform
+    # Create the inherited transform version
     diffusion_transform = DiTActionRLDSBatchTransform(
-        # 继承父类的参数
+        # Inherit parent-class parameters
         predict_stop_token=True,
         use_wrist_image=True,
         use_proprio=True,
-        # 新增的参数
+        # parameter
         tokenizer=tokenizer,
         processor=processor,
     )
@@ -790,7 +790,7 @@ def test_diffusion_dataset_with_inheritance():
     dataset = RLDSDataset(
         data_root_dir=Path("/vast/users/xiaodan/zhangjian/datasets/modified_libero_rlds"),
         data_mix="libero_4_task_suites_no_noops", # libero_spatial_no_noops, 
-        batch_transform=diffusion_transform,  # 使用继承的transform
+        batch_transform=diffusion_transform,  # Use the inherited transform
         resize_resolution=(224, 224),
         shuffle_buffer_size=100_000,
         train=True,
@@ -809,7 +809,7 @@ def test_diffusion_dataset_with_inheritance():
         if "text_attention_mask" in sample:
             print("Text attention mask shape:", sample["text_attention_mask"].shape,sample["text_attention_mask"].dtype)
             print(sample["text_attention_mask"])
-        # 只打印第一个样本，避免输出过多
+        # Print only the first sample to avoid too much output
         break
 
 

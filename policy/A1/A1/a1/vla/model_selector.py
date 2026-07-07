@@ -6,7 +6,7 @@ from typing import Optional
 class ModelSelector(nn.Module):
     def __init__(self, image_feature_dim: int, text_feature_dim: int, history_embedding_dim: int = 32, hidden_dim: int = 128):
         super().__init__()
-        # history code: 0 = 未调用, 1 = 使用 AffordVLA, 2 = 使用 DiT Action
+        # history code: 0 = use, 1 = use AffordVLA, 2 = use DiT Action
         self.history_embedding = nn.Embedding(num_embeddings=3, embedding_dim=history_embedding_dim)
         self.history_gru = nn.GRU(input_size=history_embedding_dim, hidden_size=hidden_dim, batch_first=True)
         

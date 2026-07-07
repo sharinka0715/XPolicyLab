@@ -453,7 +453,7 @@ def load_tasks(local_dir: Path) -> pandas.DataFrame:
     if parquet_path.exists():
         tasks = pd.read_parquet(parquet_path)
     elif jsonl_path.exists():
-        # jsonl: 每行一个 JSON 对象
+        # jsonl: row JSON for
         tasks = pd.read_json(jsonl_path, lines=True)
        
 

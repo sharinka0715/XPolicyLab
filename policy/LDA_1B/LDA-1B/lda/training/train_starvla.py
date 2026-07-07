@@ -154,7 +154,7 @@ class VLATrainer(TrainerUtils):
         # load pretrained weights
         self._init_checkpointing() # TODO merge with load pretrained weights
 
-        # 根据  resume 调整 lr_scheduler
+        # Adjust lr_scheduler based on resume
         self._adjust_lr_scheduler_for_resume()
 
         # freeze parameters
@@ -184,11 +184,11 @@ class VLATrainer(TrainerUtils):
         if self.completed_steps > 0:
             logger.info(f"Adjusting LR scheduler for resume from step {self.completed_steps}")
             
-            # 方法1: 直接模拟已完成的步数（适用于大多数调度器）
+            # Method 1: directly simulate completed steps, which works for most schedulers
             for _ in range(self.completed_steps):
                 self.lr_scheduler.step()
             
-            # 或者方法2: 对于某些调度器，可以直接设置最后步数
+            # ormethod2: forscheduler, setlast
             # if hasattr(self.lr_scheduler, '_step_count'):
             #     self.lr_scheduler._step_count = self.completed_steps
             
@@ -218,13 +218,13 @@ class VLATrainer(TrainerUtils):
         self.checkpoint_dir = os.path.join(self.config.output_dir, "checkpoints")
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
-        # 获取预训练检查点和是否恢复训练的标志
+        # Get the pretrained checkpoint and the resume-training flag
         pretrained_checkpoint = getattr(self.config.trainer, "pretrained_checkpoint", None)
         is_resume = getattr(self.config.trainer, "is_resume", False)
         self.resume_from_checkpoint = pretrained_checkpoint
         # TODO retinking resume and load from pretrained_checkpoint
         if is_resume:
-            # 恢复训练状态
+            # restoreTraining state
             resume_from_checkpoint, self.completed_steps = self._get_latest_checkpoint(self.checkpoint_dir)
             
             if resume_from_checkpoint:
@@ -236,7 +236,7 @@ class VLATrainer(TrainerUtils):
                 logger.warning(f"No valid checkpoint found in {self.checkpoint_dir}. Starting training from scratch.")
                 self.completed_steps = 0
 
-        # 加载预训练权重
+        # Load pretrained weights
         if pretrained_checkpoint:
             reload_modules = getattr(self.config.trainer, "reload_modules", None)
             self.model = self.load_pretrained_backbones(self.model, pretrained_checkpoint, reload_modules=reload_modules)

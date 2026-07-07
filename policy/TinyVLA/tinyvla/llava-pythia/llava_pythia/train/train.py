@@ -54,8 +54,8 @@ class ActionHeadArguments:
     action_head_type: str = field(default="fc")
     use_state: bool = field(default=False)
     window_size: int = field(default=6)
-    use_diff: bool = field(default=False) # diffusion策略作为action head
-    last_action: bool = field(default=False) # 上一次的action作为输入
+    use_diff: bool = field(default=False) # Use a diffusion policy as the action head
+    last_action: bool = field(default=False) # actionasInput
     fusion_mode: str = field(default="")
     return_feature: bool = field(default=False)
     multi_step_action: int = 1

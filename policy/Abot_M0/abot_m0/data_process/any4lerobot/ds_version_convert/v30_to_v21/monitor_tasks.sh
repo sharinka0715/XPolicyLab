@@ -1,18 +1,18 @@
 #!/bin/bash
-# 监控转换任务运行状态的脚本
-# 可以在另一个终端运行此脚本来实时查看任务状态
+# converttaskrunstate
+# inruntaskstate
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUTPUT_BASE_PATH="/mnt/workspace/vla_dataset/lerobot/agibot_convert_21/agibotworld"
 
-# 颜色输出
+# color
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 查找状态目录
+# statedirectory
 STATUS_DIRS=$(find /tmp -maxdepth 1 -type d -name "convert_tasks_*" 2>/dev/null | sort -r)
 
 if [ -z "$STATUS_DIRS" ]; then
@@ -28,7 +28,7 @@ if [ -z "$STATUS_DIRS" ]; then
     exit 0
 fi
 
-# 使用最新的状态目录
+# use statedirectory
 STATUS_DIR=$(echo "$STATUS_DIRS" | head -n1)
 STATUS_INFO_FILE=$(find /tmp -maxdepth 1 -name "convert_status_*.info" 2>/dev/null | sort -r | head -n1)
 
@@ -40,14 +40,14 @@ echo -e "${BLUE}=== Conversion Task Monitor ===${NC}"
 echo "Status directory: $STATUS_DIR"
 echo ""
 
-# 方法1: 从状态文件读取
+# method1: fromstatefileread
 if [ -d "$STATUS_DIR" ]; then
     running_tasks=()
     completed_tasks=()
     failed_tasks=()
     pending_tasks=()
     
-    # 读取任务列表（从状态文件推断）
+    # readtaskcolumn(fromstatefile)
     if [ -f "$STATUS_INFO_FILE" ] && [ -n "$TOTAL" ]; then
         echo -e "${GREEN}Running Tasks:${NC}"
         for status_file in "$STATUS_DIR"/*.status; do
@@ -58,7 +58,7 @@ if [ -d "$STATUS_DIR" ]; then
                 case "$status" in
                     "RUNNING")
                         running_tasks+=("$task_id")
-                        # 检查进程是否还在运行
+                        # checkprocessinrun
                         if ps aux | grep -q "[p]ython3.*$SCRIPT_DIR/convert_v30_to_v21_simple.py.*--task-id $task_id"; then
                             echo -e "  ${YELLOW}[RUNNING]${NC} $task_id"
                         else

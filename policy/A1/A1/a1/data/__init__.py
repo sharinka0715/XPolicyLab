@@ -330,7 +330,7 @@ def build_vla_train_dataloader(train_config: TrainConfig, device=None):
         log.error(f"Error checking for RLDS datasets: {e}")
         has_rlds = False
 
-    # 从配置中读取图像增强参数（如果未配置则使用默认值）
+    # fromconfiginreadImageparameter(ifconfiguseDefault value)
     image_aug_config = vla_cfg.get("image_augmentation", {})
     enable_image_augmentation = image_aug_config.get("enable", True)
     enable_random_erasing = image_aug_config.get("enable_random_erasing", True)
@@ -435,7 +435,7 @@ def build_rlds_dit_action_train_dataloader(train_config: TrainConfig,text_model_
     assert train_config.device_train_batch_size is not None
     data_config = train_config.data
 
-    # 不使用 build_mm_preprocessor，因为 DiffusionTransformerAction 不需要这个处理
+    # Do not use build_mm_preprocessor because DiffusionTransformerAction does not need this processing
     
     if data_config.dataset:
         logging.info(f"Loading train dataset: {data_config.dataset}/{data_config.split}")
@@ -443,7 +443,7 @@ def build_rlds_dit_action_train_dataloader(train_config: TrainConfig,text_model_
         from a1.data.collator import DiTActionCollator
         from transformers import AutoTokenizer, AutoProcessor
         
-        # 创建 DiT Action 专用的 batch transform
+        # Create a batch transform dedicated to DiT Action
         # siglip_ckpt_path= "/mnt/data/zhangjian/google/siglip-so400m-patch14-384"
         # text_model_ckpt_path = "/mnt/data/zhangjian/Qwen3/Qwen3-1.7B"
         tokenizer = AutoTokenizer.from_pretrained(text_model_path)
@@ -471,7 +471,7 @@ def build_rlds_dit_action_train_dataloader(train_config: TrainConfig,text_model_
         # dataset = IterableDatasetWrapper(dataset,None, data_config.seed) 
 
         # print("******", "Start creating DiT Action collator...")
-        # 创建 DiT Action 专用的 collator
+        # Create a collator dedicated to DiT Action
         collate_fn = DiTActionCollator(
             include_metadata=False,
             use_proprio=data_config.use_proprio,
@@ -485,7 +485,7 @@ def build_rlds_dit_action_train_dataloader(train_config: TrainConfig,text_model_
     else:
         raise ValueError("DiT Action RLDS dataset requires a dataset name to be specified in the data config.")
     
-    # 直接使用 dataset，不需要 preprocessor 包装
+    # Use the dataset directly without wrapping it in a preprocessor
     assert train_config.epoch == 0 or train_config.epoch is None
     
     dataloader =  DataLoader(
@@ -493,7 +493,7 @@ def build_rlds_dit_action_train_dataloader(train_config: TrainConfig,text_model_
         batch_size=train_config.device_train_batch_size,
         drop_last=train_config.data.drop_last,
         collate_fn=collate_fn,
-        num_workers=0,  # 使用 dataset 内部的 workers
+        num_workers=0,  # Use the dataset's internal workers
         pin_memory=train_config.data.pin_memory,
         prefetch_factor=None if train_config.data.num_workers == 0 else train_config.data.prefetch_factor,
         persistent_workers=False if train_config.data.num_workers == 0 else train_config.data.persistent_workers,

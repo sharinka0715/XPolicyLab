@@ -306,7 +306,7 @@ class Helper:
         now_pose_mat[:3, :3] = (base_trans_mat[:3, :3] @ init_pose_mat[:3, :3] @ base_trans_mat[:3, :3].T)
         now_pose_mat[:3, 3] = base_trans_mat[:3, :3] @ init_pose_mat[:3, 3]
 
-        # 转化为世界坐标
+        # as
         p = now_pose_mat[:3, 3] + now_base_mat[:3, 3]
         q_mat = now_pose_mat[:3, :3] @ now_base_mat[:3, :3]
         return sapien.Pose(p, t3d.quaternions.mat2quat(q_mat))
@@ -913,7 +913,7 @@ class Helper:
         #     f.write(json.dumps(self.result[-1]) + '\n')
         # with open('success.txt', 'a', encoding='utf-8') as f:
         #     f.write(
-        #         f'{idx}_{name:<15}/{mid:2d} 标定：{"是" if tagged else "否"}  稳定：{"是" if success else "否"}\n')
+        # f'{idx}_{name:<15}/{mid:2d} : {"" if tagged else ""} : {"" if success else ""}\n')
 
         # if cnt > 0 and cnt % 20 == 0:
         #     self.scene.clear()

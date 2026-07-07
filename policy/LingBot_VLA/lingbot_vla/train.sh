@@ -14,7 +14,7 @@ mkdir -p "${HF_HOME}" "${HF_DATASETS_CACHE}" "${TRANSFORMERS_CACHE}" "${TMPDIR}"
 if [ -z "$CUDA_VISIBLE_DEVICES" ]; then
   NPROC_PER_NODE=$(nvidia-smi -L | wc -l)
 else
-  # 可见 GPU 数量
+  # Number of visible GPUs
   NPROC_PER_NODE=$(echo $CUDA_VISIBLE_DEVICES | tr ',' '\n' | wc -l)
 fi
 echo "Using NPROC_PER_NODE=$NPROC_PER_NODE GPUs"

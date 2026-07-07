@@ -149,9 +149,9 @@ class AffordVLAEarlyExit(Molmo):
         
         # extract action hidden states  (batch_size, chunk_len * action_dim, hidden_dim)
         action_hidden_states = self.extract_action_hidden_states(last_hidden_state, input_ids,kwargs["proprio_token_idx"])  
-        # 打印 actions_hidden_states 在 action 段是否不同：
-        # print(action_hidden_states[0, :7, :4])      # 第0步7维的前4个hidden
-        # print(action_hidden_states[0, 7:14, :4])    # 第1步7维的前4个hidden
+        # print actions_hidden_states in action :
+        # print(action_hidden_states[0,:7,:4]) # 07 before4hidden
+        # print(action_hidden_states[0, 7:14,:4]) # 17 before4hidden
 
         # with FSDP.summon_full_params(self.action_head):  
         if self.action_head_type == 'l1_regression':
@@ -224,7 +224,7 @@ class AffordVLAEarlyExit(Molmo):
         #     assert state is not None, "action_proprio is required for flow_matching inference"
         #     for _ in range(steps):
         #         t = torch.full((B,), t_float, device=device, dtype=dtype)
-        #         # 无缓存场景，传入 past_key_values=None，并使用起始位置作为 position 偏移
+        # # cache, past_key_values=None, useas position
         #         pos_offset = torch.full((B,), start_idx + 1, dtype=torch.long, device=device)
         #         v = self.action_head.predict_vector_field(None, state, x, t, pos_offset=pos_offset)
         #         x = x + dt * v
@@ -242,7 +242,7 @@ class AffordVLAEarlyExit(Molmo):
         B = attn_key_values[0][0].shape[0]
         steps = getattr(self.config, 'num_diffusion_inference_steps', 10)
         dt = -1.0 / float(steps)
-        # 使用上一层传递过来的noise action作为初始状态
+        # use noise actionasstate
         if input_x is None:
             x = torch.randn((B, self.config.num_actions_chunk, self.config.fixed_action_dim), device=device, dtype=dtype)
         else:
@@ -309,12 +309,12 @@ class AffordVLAEarlyExit(Molmo):
             # # the caller must pass action_proprio via kwargs in predict stage
             # state = kwargs.get('action_proprio', None)
             # assert state is not None, "action_proprio is required for flow_matching inference"
-            # # 基于 prefix_pad_masks 计算每个样本的有效前缀长度，避免 padding 干扰位置编码
+            # # prefix_pad_masks computesample before, avoid padding
             # if 'prefix_pad_masks' in kwargs and kwargs['prefix_pad_masks'] is not None:
             #     ppm = kwargs['prefix_pad_masks']  # bool[B, P]
             #     pos_offset = ppm.to(torch.int64).sum(dim=1)  # (B,)
             # else:
-            #     # 回退：直接用 input_ids 的非 -1 个数作为有效前缀长度
+            # # fallback: use input_ids -1 asbefore
             #     pos_offset = (input_ids != -1).to(torch.int64).sum(dim=1)
             # for _ in range(steps):
             #     t = torch.full((B,), t_float, device=device, dtype=dtype)
@@ -366,7 +366,7 @@ class AffordVLAEarlyExit(Molmo):
     def find_action_token_positions(self, input_tokens):  
         """查找 action start 和 end token 在输入序列中的位置"""  
         
-        # 获取特殊标记的 ID  
+        # get ID
         tokenizer = self.config.get_tokenizer()  
         special_tokens = get_special_token_ids(tokenizer)  
         action_start_token_id = special_tokens[DEFAULT_ACT_START_TOKEN]  
@@ -374,30 +374,30 @@ class AffordVLAEarlyExit(Molmo):
         
         batch_size, seq_len = input_tokens.shape  
         
-        # 查找每个样本中的 action start 和 end 位置  
+        # samplein action start and end
         start_positions = []  
         end_positions = []  
         
         for batch_idx in range(batch_size):  
-            # 查找 action_start_token_id 的位置  
+            # action_start_token_id
             start_mask = (input_tokens[batch_idx] == action_start_token_id)  
             start_pos = torch.nonzero(start_mask, as_tuple=False)  
             
-            # 查找 action_end_token_id 的位置  
+            # action_end_token_id
             end_mask = (input_tokens[batch_idx] == action_end_token_id)  
             end_pos = torch.nonzero(end_mask, as_tuple=False)  
             
             if len(start_pos) > 0:  
                 print('! len(start_pos) > 0',start_pos) if len(start_pos) > 1 else None
-                start_positions.append(start_pos[-1].item())  # 取最后一个 start token  
+                start_positions.append(start_pos[-1].item())  # last start token
             else:  
-                start_positions.append(-1)  # 未找到  
+                start_positions.append(-1)  # to
                 
             if len(end_pos) > 0:  
                 print('! len(end_pos) > 0',end_pos) if len(end_pos) > 1 else None
-                end_positions.append(end_pos[-1].item())  # 取最后一个 end token  
+                end_positions.append(end_pos[-1].item())  # last end token
             else:  
-                end_positions.append(-1)  # 未找到  
+                end_positions.append(-1)  # to
 
         
         return start_positions, end_positions  
@@ -420,17 +420,17 @@ class AffordVLAEarlyExit(Molmo):
     # def extract_action_hidden_states_vectorized(self, hidden_states, action_start_pos, action_end_pos):  
     #     batch_size, seq_len, hidden_dim = hidden_states.shape  
         
-    #     # 假设所有样本的 action 长度相同  
+    # # allsample action
     #     action_length = action_end_pos[0] - action_start_pos[0]  
         
-    #     # 创建索引矩阵  
+    # # createindex
     #     batch_indices = torch.arange(batch_size, device=hidden_states.device).unsqueeze(1)  # (batch_size, 1)  
     #     position_offsets = torch.arange(action_length, device=hidden_states.device).unsqueeze(0)  # (1, action_length)  
         
-    #     # 计算每个样本的绝对位置索引  
+    # # computesample forPosition indices
     #     absolute_positions = action_start_pos.unsqueeze(1) + position_offsets  # (batch_size, action_length)  
         
-    #     # 使用高级索引提取  
+    # # useindexextract
     #     actions_hidden_states = hidden_states[batch_indices, absolute_positions]  # (batch_size, action_length, hidden_dim)  
         
     #     return actions_hidden_states
@@ -490,8 +490,8 @@ class AffordVLAEarlyExit(Molmo):
 
 
         # print('*' * 50, 'FSDP Wrap Policy', '*' * 50)
-        # 重要：正确处理action_head的包装
-        # 不要将action_head添加到size_based_module_to_wrap中，而是在策略函数中明确处理
+        # : processaction_head
+        # action_headaddtosize_based_module_to_wrapin, ininprocess
         # action_head_modules = set()
         # if hasattr(self, 'action_head'):
         #     action_head_modules = set(dict(self.action_head.named_modules()).values())
@@ -500,7 +500,7 @@ class AffordVLAEarlyExit(Molmo):
         #     if name.startswith("action_head")
         # }
         
-        #     # 收集action_head及其所有子模块
+        # # action_headandall
         #     def collect_action_head_modules(module, modules_set):
         #         modules_set.add(module)
         #         for child in module.children():
@@ -517,7 +517,7 @@ class AffordVLAEarlyExit(Molmo):
 
             def fsdp_wrap_fn(module, recurse: bool = True, nonwrapped_numel: int = 0):
                 del nonwrapped_numel
-                # # 明确排除action_head相关模块
+                # # action_head
                 # if module in action_head_modules:
                 #     return False
                 # module_name = getattr(module, "_fsdp_wrap_module_name", None)
@@ -536,7 +536,7 @@ class AffordVLAEarlyExit(Molmo):
             def fsdp_wrap_fn(module, recurse: bool = True, nonwrapped_numel: int = 0):
                 del nonwrapped_numel
                 
-                # # 明确排除action_head相关模块，避免冲突的包装策略
+                # # action_head, avoid
                 # if module in action_head_modules:
                 #     return False
                 # module_name = getattr(module, "_fsdp_wrap_module_name", None)
@@ -624,7 +624,7 @@ class AffordVLAEarlyExit(Molmo):
 
 
     # def get_action_head_parameters(self):  
-    #     """获取 action_head 的参数名称，用于参数冻结"""  
+    # """get action_head parametername, useparameter"""
     #     return [name for name, _ in self.action_head.named_parameters()]
 
 
@@ -746,7 +746,7 @@ class AffordVLAEarlyExit(Molmo):
         # assert target_actions is not None, "target_actions must be provided for action prediction"
         # generate random layer id to train early exit
         train_exit_random_layer_id = random.randint(0, self.config.n_layers - 1)
-        # 保证多卡/多进程下各 rank 选择相同的随机层，避免通信不一致
+        # /processunder rank random, avoid
         if train_exit_random_layer is not None and dist.is_available() and dist.is_initialized():
             t = torch.tensor([train_exit_random_layer_id], device=input_ids.device, dtype=torch.int64)
             dist.broadcast(t, src=0)
@@ -927,7 +927,7 @@ class AffordVLAEarlyExit(Molmo):
                     assert cache is not None
                     attn_key_values.append(cache)
                 
-                # early exit for training: 在随机层（含该层）之后提前停止后续层的计算
+                # early exit for training: inrandom()afterbeforestopafter compute
                 if train_exit_random_layer is not None and block_idx >= train_exit_random_layer_id:
                     break
 
@@ -946,9 +946,9 @@ class AffordVLAEarlyExit(Molmo):
                     if exit_flag:
                         # print(f"*** Exit by exit_controller, block_idx: {block_idx}")
                         if log_fn is not None:
-                            # 纯文本日志用于外部解析统计
+                            # textusestatistics
                             log_fn(f"Exit by exit_controller, block_idx: {block_idx}")
-                        # 这里可以直接返回action，因为已经在exit_controller的value_net中计算了action
+                        # action, asinexit_controller value_netincomputeaction
                         return OLMoWithLastOutput(logits=None, attn_key_values=attn_key_values, last_hidden_state=x,exit_layer=block_idx,
                                 hidden_states=tuple(all_hidden_states) if output_hidden_states else None, exit_action=exit_action) 
         else:
@@ -1010,11 +1010,11 @@ class AffordVLAEarlyExit(Molmo):
         # print('******** AffordVLA forward, is_training: ',is_training)
         # print('******** AffordVLA forward, target_actions: ', target_actions)
         
-        # 推理阶段
+        # Translated comment
         if not is_training:
             return OLMoWithLastOutput(logits=logits, attn_key_values=attn_key_values, last_hidden_state=last_hidden_state,exit_layer=-1,
                                       hidden_states=tuple(all_hidden_states) if output_hidden_states else None) 
-        # 训练阶段
+        # Translated comment
         if is_training:
             
             outputs = OLMoWithLastOutput(logits=logits, attn_key_values=attn_key_values, last_hidden_state=last_hidden_state,exit_layer=-1,
@@ -1057,7 +1057,7 @@ class AffordVLAEarlyExit(Molmo):
             
             def generate_action_flow_matching(attn_key_values):
                 llm_dtype = next(self.transformer.parameters()).dtype
-                # 确保 action_head 参数与主 LLM 一致的 dtype（bf16/fp32）
+                # ensure action_head parameterand LLM dtype(bf16/fp32)
                 self.action_head.to(llm_dtype)
                 
                 # sample noisy path
@@ -1069,11 +1069,11 @@ class AffordVLAEarlyExit(Molmo):
                 timesteps = t.unsqueeze(1)
 
                 assert self.config.use_proprio and action_proprio is not None, "flow_matching requires action_proprio"
-                # 训练阶段：基于 input_ids 估计有效前缀长度（忽略 -1 的 padding）
+                # : input_ids before( -1 padding)
                 pos_offset = (input_ids != -1).to(torch.int64).sum(dim=1)
                 pred = self.action_head.predict_vector_field(attn_key_values, action_proprio.to(dtype), x_t.to(dtype), t.to(dtype), pos_offset=pos_offset)
                 target = (noise - target_actions).to(dtype)
-                # 显式确保计算图中的张量 dtype 统一
+                # ensurecomputein dtype
                 pred = pred.to(dtype)
                 predicted_actions = None
 
@@ -1088,7 +1088,7 @@ class AffordVLAEarlyExit(Molmo):
             outputs_list = []
             # randomly sample a layer to exit, or supervise all layers
 
-            # flow matching单独的处理逻辑
+            # flow matching process
             if self.action_head_type == "flow_matching":
                 assert attn_key_values is not None, "attn_key_values is required for flow matching"
                 assert len(attn_key_values) > 0, "attn_key_values is required for flow matching"

@@ -108,7 +108,7 @@ class Qwen_PI(baseframework):
                 output_hidden_states=True,
                 return_dict=True,
             )
-            # 取与 DiT 层数匹配的最后 N 层隐藏态，按层喂给 DiT
+            # and DiT last N , by DiT
             all_hidden = qwenvl_outputs.hidden_states
             expected_layers = len(self.action_model.model.transformer_blocks)
             vl_embs_list = list(all_hidden[-expected_layers:])
@@ -116,7 +116,7 @@ class Qwen_PI(baseframework):
 
         # Step 4: Action Expert Forward and Loss
         with torch.autocast("cuda", dtype=torch.float32):
-            # 标签对齐：取最后 chunk_len 段
+            # Label alignment: take the last chunk_len segments
             actions = torch.tensor(
                 np.array(actions), device=base_hidden.device, dtype=base_hidden.dtype
             )  # [B, T_full, action_dim]
@@ -127,7 +127,7 @@ class Qwen_PI(baseframework):
             )
             repeated_diffusion_steps = 2 # NO repeat for big action FM
             actions_target_repeated = actions_target.repeat(repeated_diffusion_steps, 1, 1)
-            # 对每层特征做 repeat
+            # for repeat
             vl_embs_list_repeated = [h.repeat(repeated_diffusion_steps, 1, 1) for h in vl_embs_list]
             
             state_repeated = None

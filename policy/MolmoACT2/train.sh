@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
-# MolmoAct2 LeRobot 微调入口（XPolicyLab 统一 6 参数）
+# MolmoAct2 LeRobot fine-tuning entrypoint using the unified XPolicyLab 6-argument interface
 #
 # Usage:
 #   bash train.sh <bench_name> <ckpt_name> <env_cfg_type> <action_type> <seed> <gpu_id>
 #
-# 示例（RoboDojo 双臂 co-train，8×80GB 推荐配置）:
+# Example: RoboDojo dual-arm co-training, recommended for 8x80GB GPUs:
 #   bash train.sh RoboDojo cotrain arx_x5 joint 0 0,1,2,3,4,5,6,7
-#   bash train.sh RoboDojo cotrain arx_x5 joint 0 0          # 单卡
+#   bash train.sh RoboDojo cotrain arx_x5 joint 0 0          # single GPU
 #
-# 环境变量（可选）:
-#   MOLMOACT2_DATASET_ROOT   LeRobot 数据集根目录（含 meta/ data/ videos/）
-#   MOLMOACT2_DATASET_REPO_ID  传给 --dataset.repo_id 的标识
-#   MOLMOACT2_CHECKPOINT_PATH  起点权重，默认 allenai/MolmoAct2
-#   MOLMOACT2_OUTPUT_ROOT        训练输出根目录，默认 policy/MolmoACT2/checkpoints
-#   MOLMOACT2_BATCH_SIZE       每卡 batch size，默认 16（8 卡 global batch=128）
-#   MOLMOACT2_STEPS            训练步数，默认 100000
-#   MOLMOACT2_SAVE_FREQ        保存间隔，默认 10000
-#   MOLMOACT2_NUM_WORKERS      dataloader workers，默认 4
-#   MOLMOACT2_ACTION_MODE      continuous / discrete / both，默认 continuous
-#   MOLMOACT2_TRAIN_ACTION_EXPERT_ONLY  1=只训 action expert，默认 0（co-train 全量微调）
-#   MOLMOACT2_ENABLE_LORA_VLM  1=对 VLM 开 LoRA，默认 0
-#   MOLMOACT2_CHUNK_SIZE       action horizon，默认 10
-#   MOLMOACT2_WANDB_ENABLE     1 开启 wandb，默认 0
-#   MOLMOACT2_LOCAL_CACHE_ROOT  本机 HF datasets 缓存根目录，默认 /tmp/molmoact2-cache-$(hostname)
+# Optional environment variables:
+#   MOLMOACT2_DATASET_ROOT   LeRobot dataset root, including meta/, data/, and videos/
+#   MOLMOACT2_DATASET_REPO_ID  Identifier passed to --dataset.repo_id
+#   MOLMOACT2_CHECKPOINT_PATH  Starting checkpoint, defaults to allenai/MolmoAct2
+#   MOLMOACT2_OUTPUT_ROOT        Training output root, defaults to policy/MolmoACT2/checkpoints
+#   MOLMOACT2_BATCH_SIZE       Per-GPU batch size, defaults to 16 (8 GPUs gives global batch=128)
+#   MOLMOACT2_STEPS            Training steps, defaults to 100000
+#   MOLMOACT2_SAVE_FREQ        Save interval, defaults to 10000
+#   MOLMOACT2_NUM_WORKERS      Dataloader workers, defaults to 4
+#   MOLMOACT2_ACTION_MODE      continuous / discrete / both; defaults to continuous
+#   MOLMOACT2_TRAIN_ACTION_EXPERT_ONLY  1 trains only the action expert; defaults to 0 for full co-training fine-tuning
+#   MOLMOACT2_ENABLE_LORA_VLM  1 enables LoRA for the VLM; defaults to 0
+#   MOLMOACT2_CHUNK_SIZE       Action horizon, defaults to 10
+#   MOLMOACT2_WANDB_ENABLE     1 enables wandb; defaults to 0
+#   MOLMOACT2_LOCAL_CACHE_ROOT  Local HF datasets cache root; defaults to /tmp/molmoact2-cache-$(hostname)
 
 set -euo pipefail
 
@@ -63,8 +63,8 @@ if [[ "${OUTPUT_DIR}" != "${STANDARD_CKPT_DIR}" ]]; then
   echo "已软链标准路径: ${STANDARD_CKPT_DIR} -> ${OUTPUT_DIR}"
 fi
 
-# 默认：RoboDojo 双臂 v30 co-train
-# 8×80GB：每卡 bs=15 → global batch=128；
+# Default: RoboDojo dual-arm v30 co-training
+# 8x80GB: bs=15 per GPU gives global batch=128;
 MOLMOACT2_DATASET_ROOT="${MOLMOACT2_DATASET_ROOT:?set MOLMOACT2_DATASET_ROOT to your RoboDojo LeRobot dataset dir}"
 MOLMOACT2_DATASET_REPO_ID="${MOLMOACT2_DATASET_REPO_ID:-RoboDojo_sim_arx-x5_v30}"
 MOLMOACT2_CHECKPOINT_PATH="${MOLMOACT2_CHECKPOINT_PATH:-allenai/MolmoAct2}"
@@ -80,7 +80,7 @@ MOLMOACT2_CHUNK_SIZE="${MOLMOACT2_CHUNK_SIZE:-10}"
 MOLMOACT2_WANDB_ENABLE="${MOLMOACT2_WANDB_ENABLE:-0}"
 VIDEO_BACKEND="${VIDEO_BACKEND:-pyav}"
 
-# 双臂 ARX-X5 v30：3 路相机 + 14 维 joint state/action
+# Dual-arm ARX-X5 v30: 3 cameras plus 14-D joint state/action
 IMAGE_KEYS='["observation.images.cam_high","observation.images.cam_left_wrist","observation.images.cam_right_wrist"]'
 SETUP_TYPE="${MOLMOACT2_SETUP_TYPE:-dual arx x5 robotic arms in robodojo simulation}"
 

@@ -54,7 +54,7 @@ def verbose_fsdp_grouping(model, prefix="", depth=0):
 
     for name, child in model.named_children():
         if isinstance(child, FullyShardedDataParallel):
-            module_names = [m_name for m_name, _ in child.named_modules()][1:]  # [1:] 排除自身
+            module_names = [m_name for m_name, _ in child.named_modules()][1:]  # [1:] exclude itself
             strategy = child.sharding_strategy
             logger.debug_rank0(f"{indent}├── [FSDP Group] {prefix}{name}")
             logger.debug_rank0(

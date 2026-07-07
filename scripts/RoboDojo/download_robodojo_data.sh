@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# 从 ModelScope / HuggingFace 下载 RoboDojo 数据集到 XPolicyLab/data/
+# Download the RoboDojo dataset from ModelScope / HuggingFace to XPolicyLab/data/
 #
-# 用法:
+# Usage:
 #   bash scripts/RoboDojo/download_robodojo_data.sh <source> <type>
 #
-# 示例:
+# Example:
 #   bash scripts/RoboDojo/download_robodojo_data.sh modelscope lerobot_v3.0
 #   bash scripts/RoboDojo/download_robodojo_data.sh huggingface hdf5
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"  # XPolicyLab 根目录
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"  # XPolicyLab root directory
 DATA_ROOT="${PROJECT_ROOT}/../data"
 
-SOURCE="${1:-}"      # 下载源: modelscope / huggingface
-DATA_TYPE="${2:-}"   # 数据格式: lerobot_v3.0 / lerobot_v2.1 / hdf5 / hdf5_w_depth / demo
+SOURCE="${1:-}"      # Download source: modelscope / huggingface
+DATA_TYPE="${2:-}"   # Data format: lerobot_v3.0 / lerobot_v2.1 / hdf5 / hdf5_w_depth / demo
 
 MODELSCOPE_REPO="https://oauth2:ms-98d73e79-a89f-4cfa-ac03-039f2d26c7b4@www.modelscope.cn/datasets/niantianshinidie/RoboDojo_release.git"
 HF_REPO_ID="${HF_REPO_ID:-KailunSu/niantian}"
@@ -90,7 +90,7 @@ resolve_data_paths() {
 	esac
 }
 
-# ModelScope: git sparse-checkout 只拉指定子目录
+# ModelScope: git sparse-checkout fetch only the specified subdirectory
 clone_sparse_folder() {
 	local repo_url="$1"
 	local remote_dir="$2"
@@ -151,7 +151,7 @@ if missing:
 PY
 }
 
-# HuggingFace: snapshot_download + allow_patterns + hf_transfer 并行大文件批量下载
+# HuggingFace: snapshot_download + allow_patterns + hf_transfer parallel batch download for large files
 download_hf_folder() {
 	local repo_id="$1"
 	local remote_dir="$2"
@@ -172,7 +172,7 @@ download_hf_folder() {
 
 	ensure_hf_deps
 
-	# hf_transfer 必须在 import huggingface_hub 之前启用
+	# hf_transfer must be enabled before importing huggingface_hub
 	export HF_HUB_ENABLE_HF_TRANSFER=1
 	export HF_HUB_DOWNLOAD_TIMEOUT="${HF_DOWNLOAD_TIMEOUT}"
 	export HF_TRANSFER_MAX_CONCURRENT_DOWNLOADS="${HF_MAX_WORKERS}"

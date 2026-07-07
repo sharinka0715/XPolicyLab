@@ -222,7 +222,7 @@ def get_frames_by_timestamps(
         CPU 多线程 FFmpeg读取av1视频, 直接返回 np.ndarray [N,H,W,3]
         """
         frames = []
-        # 先用 ffprobe 获取宽高
+        # firstuse ffprobe get
         import json
         cmd_probe = [
             "ffprobe", "-v", "error",

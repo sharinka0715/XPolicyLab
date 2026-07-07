@@ -22,7 +22,7 @@ data_setting="${bench_name}-${ckpt_name}-${env_cfg_type}-${action_type}"
 ckpt_setting="${bench_name}-${ckpt_name}-${env_cfg_type}-${action_type}-${seed}"
 ckpt_dir="${POLICY_DIR}/checkpoints/${ckpt_setting}"
 
-# LeRobot 数据路径；默认读取 RoboDojo abot cotrain 数据，可通过环境变量覆盖
+# LeRobot data path; defaults to RoboDojo Abot cotrain data and can be overridden with an environment variable
 DATA_ROOT="${ABOT_DATA_ROOT:-${HF_LEROBOT_HOME:-${HOME}/.cache/huggingface/lerobot}}"
 DATASET_REPO="${ABOT_DATASET_REPO:-RoboDojo_sim_v21_video_abot}"
 DATA_MIX="${ABOT_DATA_MIX:-robodojo_sim}"
@@ -46,13 +46,13 @@ export BASE_VLM="${ABOT_BASE_VLM:-${MODEL_ROOT}/Qwen3-VL-4B-Instruct-Action}"
 export PRETRAIN_CKPT="${ABOT_PRETRAIN_CKPT:-${MODEL_ROOT}/ABot-M0-Pretrain/checkpoints/ABot_M0_Pretrain.pt}"
 export RELOAD_MODULES="${ABOT_RELOAD_MODULES:-qwen_vl_interface}"
 
-# 数据已 prepare 过时设为空，避免覆盖多任务指令
+# Leave empty when data has already been prepared to avoid overwriting multi-task instructions
 export PREPARE_SCRIPT="${ABOT_PREPARE_SCRIPT:-}"
 
 export BATCH_SIZE="${ABOT_BATCH_SIZE:-8}"
 export GRADIENT_ACCUMULATION_STEPS="${ABOT_GRAD_ACC:-1}"
 export NUM_WORKERS="${ABOT_NUM_WORKERS:-0}"
-# RoboDojo_sim_v21_video_abot 为 AV1 编码，必须用 torchvision_av；decord 无法解码
+# RoboDojo_sim_v21_video_abot is AV1 encoded, so torchvision_av is required; decord cannot decode it
 export VIDEO_BACKEND="${ABOT_VIDEO_BACKEND:-torchvision_av}"
 export MAX_TRAIN_STEPS="${ABOT_MAX_TRAIN_STEPS:-150000}"
 export SAVE_INTERVAL="${ABOT_SAVE_INTERVAL:-10000}"

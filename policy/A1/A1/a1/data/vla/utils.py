@@ -24,19 +24,19 @@ def quaternion_to_euler(x, y, z, w):
     旋转顺序：ZYX (yaw-pitch-roll)
     """
 
-    # 计算 roll (x轴旋转)
+    # compute roll (xaxis rotation)
     sinr_cosp = 2 * (w * x + y * z)
     cosr_cosp = 1 - 2 * (x * x + y * y)
     roll = math.atan2(sinr_cosp, cosr_cosp)
 
-    # 计算 pitch (y轴旋转)
+    # compute pitch (yaxis rotation)
     sinp = 2 * (w * y - z * x)
     if abs(sinp) >= 1:
-        pitch = math.copysign(math.pi / 2, sinp)  # 超出范围时取 90°
+        pitch = math.copysign(math.pi / 2, sinp)  # out of range 90°
     else:
         pitch = math.asin(sinp)
 
-    # 计算 yaw (z轴旋转)
+    # compute yaw (zaxis rotation)
     siny_cosp = 2 * (w * z + x * y)
     cosy_cosp = 1 - 2 * (y * y + z * z)
     yaw = math.atan2(siny_cosp, cosy_cosp)
@@ -44,8 +44,8 @@ def quaternion_to_euler(x, y, z, w):
     return roll, pitch, yaw
 
 def quaternion_to_euler_numpy(quaternions):
-        # quaternion -> euler，向量化
-        # 输入 q: (L,2,4) [x,y,z,w]
+        # quaternion -> euler, vectorized
+        # Input q: (L,2,4) [x,y,z,w]
         x = quaternions[..., 0]
         y = quaternions[..., 1]
         z = quaternions[..., 2]

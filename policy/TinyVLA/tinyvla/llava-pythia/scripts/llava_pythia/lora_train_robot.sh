@@ -55,7 +55,7 @@ deepspeed --master_port 29601 --num_gpus=8 --num_nodes=1 llava_pythia/train/trai
 #/data/team/zhumj/data/finetune/data/llava_v1_5_mix665k.json
 # cp openai/clip-vit-large-patch14-336/preprocessor_config.json $OUTPUT
 for dir in "$OUTPUT"/*/ ; do
-    # 检查文件夹名称是否包含'checkpoint'
+    # checkfoldername'checkpoint'
     if [[ "$(basename "$dir")" == *"checkpoint"* ]]; then
         cp openai/clip-vit-large-patch14-336/preprocessor_config.json $dir
         # cp $OUTPUT/non_lora_trainables.bin $dir

@@ -662,7 +662,7 @@ class Trainer:
         # Ensure variable exists for later reference across branches
         model_state = None
 
-        # 若上一阶段已在 FSDP 之前加载过模型，则本阶段跳过模型权重加载
+        # If the previous stage already loaded the model before FSDP, skip model weight loading in this stage
         if not getattr(self, "skip_next_model_load", False):
             # Load full model state on rank 0 only to reduce memory, then let FSDP handle distribution
             with FSDP.state_dict_type(
@@ -674,9 +674,9 @@ class Trainer:
                 filtered_state = None
                 target_keys = None
                 if get_global_rank() == 0:
-                    # 原始 ckpt
+                    # Original checkpoint
                     model_state = load_state_dict(load_path, "model.pt", local_cache=local_cache, map_location="cpu")  # type: ignore
-                    # 仅加载与当前模型键重叠的部分，避免命名空间不一致导致 strict 报错
+                    # Load only keys that overlap with the current model to avoid strict errors from namespace mismatches
                     target_full = self.fsdp_model.state_dict()
                     target_keys = set(target_full.keys())
                     del target_full
@@ -686,10 +686,10 @@ class Trainer:
                     log.info(
                         f"Filtered load: keep={len(filtered_state)} missing={missing_cnt} unexpected={unexpected_cnt}"
                     )
-                # 加载重叠部分，放宽 strict
+                # Load the overlapping part with relaxed strictness
                 self.fsdp_model.load_state_dict(filtered_state if filtered_state is not None else {}, strict=False)
         else:
-            # 重置一次性跳过标志
+            # Reset the one-time skip flag
             self.skip_next_model_load = False
 
         # Optimizer state: skip by default to reduce memory risk; load only if explicitly requested
@@ -710,7 +710,7 @@ class Trainer:
                     og_keys_to_new,
                 )
 
-                # 分本机 local_rank 轮流加载优化器状态，降低并发内存峰值
+                # Load optimizer states in turn by local_rank to reduce peak concurrent memory
                 gc.collect(); torch.cuda.empty_cache(); barrier()
                 for turn in range(get_local_world_size()):
                     if turn == get_local_rank():
@@ -1703,7 +1703,7 @@ class VLATrainer(Trainer):
         action_loss_weight: float = 1.0, 
         **kwargs  
     ):  
-        # 确保使用AffordVLA模型  
+        # Ensure the AffordVLA model is used
         if not isinstance(kwargs.get('model'), AffordVLA):  
             log.warning("Model is not AffordVLA, creating AffordVLA instance")  
             # kwargs['model'] = AffordVLA(cfg.model, action_dim=action_dim)  
@@ -1720,7 +1720,7 @@ class VLATrainer(Trainer):
         """
         Save only the action_head checkpoint in unsharded format.
         """
-        # 确保所有进程在开始前同步
+        # Ensure all processes synchronize before starting
         barrier()
         # Zero-gradients to avoid gathering them.
         # self.optim.zero_grad(set_to_none=True)
@@ -1932,7 +1932,7 @@ class VLATrainer(Trainer):
                     assert target_actions is not None, "Target actions must be provided in batch metadata"
                     assert pred_acts.shape == target_actions.shape, f"Shape mismatch: pred_acts {pred_acts.shape}, target_actions {target_actions.shape}"
                     
-                    # 仅在非pad位置计算L1损失
+                    # onlyinpad positionscomputeL1loss
                     pad_mask = batch.get("action_pad_mask", None)
                     assert pad_mask is not None, "Action pad mask must be provided in batch"
                     valid_mask = (~pad_mask.bool()).to(device=pred_acts.device)
@@ -1945,7 +1945,7 @@ class VLATrainer(Trainer):
                         # action_loss = self.action_criterion(pred_acts, target_actions)  
             # elif self.model.config.action_head.startswith("diffusion"):
             else:
-                # 仅在非pad位置计算MSE损失（若掩码形状匹配）
+                # onlyinpad positionscomputeMSEloss()
                 pad_mask = batch.get("action_pad_mask", None)
 
                 assert pad_mask is not None, "Action pad mask must be provided in batch"
@@ -2253,7 +2253,7 @@ class VLATrainer(Trainer):
             target_actions = torch.stack(target_actions_list).to(batch['input_ids'].device)  
             # # Expand the sequence dimension if necessary
             # if target_actions.dim() == 2:  
-            #     target_actions = target_actions.unsqueeze(1).expand(-1, 17, -1)  # 17是动作序列长度  
+            # target_actions = target_actions.unsqueeze(1).expand(-1, 17, -1) # 17is the action sequence length
             return target_actions  
           
         return None  
@@ -2641,7 +2641,7 @@ class VLATrainer(Trainer):
             )
 
     # def eval_batch(self, batch: Dict[str, Any]) -> Dict[str, Any]:  
-    #     """重写评估批次方法"""  
+    # """Override the evaluation batch method"""
     #     self.fsdp_model.eval()  
           
     #     with torch.no_grad():  
@@ -2670,10 +2670,10 @@ class VLATrainer(Trainer):
     #     }  
   
     # def log_metrics(self, metrics: Dict[str, Any], step: int, prefix: str = "train"):  
-    #     """记录VLA特定的指标"""  
+    # """Log VLA-specific metrics"""
     #     super().log_metrics(metrics, step, prefix)  
           
-    #     # 记录动作损失相关指标  
+    # # Log action-loss metrics
     #     if 'action_loss' in metrics:  
     #         log.info(f"{prefix}/action_loss: {metrics['action_loss']:.6f}")  
     #     if 'language_loss' in metrics:  
@@ -2705,24 +2705,24 @@ class SimpleDiTActionTrainer:
         self.train_dataloader = train_dataloader
         self.device = device
         
-        # 训练状态
+        # Training state
         self.global_step = 0
         self.epoch = 0
         
-         # 确定训练精度
+         # Determine the training precision
         self.train_dtype = torch.bfloat16 if config.precision == "amp_bf16" else torch.float32
         
         self.text_model = self.text_model.to(device, dtype=self.train_dtype)
         self.vision_model = self.vision_model.to(device, dtype=self.train_dtype)
 
-        # 主模型也要设置正确的数据类型
+        # Set the correct dtype on the main model as well
         self.model = self.model.to(device, dtype=self.train_dtype)
 
 
-        # 检查点管理
-        self.checkpoints: List[Path] = []  # 保存所有检查点路径
+        # Checkpoint management
+        self.checkpoints: List[Path] = []  # Store all checkpoint paths
         
-        # 设置优化器
+        # Set up the optimizer
         param_groups = [
             {'params': self.model.parameters(), 'lr': config.learning_rate, 'weight_decay': config.weight_decay}
         ]
@@ -2737,18 +2737,18 @@ class SimpleDiTActionTrainer:
         # )
         self.optimizer = torch.optim.AdamW(param_groups)
 
-        # 设置学习率调度器
+        # Set up the learning-rate scheduler
         self.scheduler = torch.optim.lr_scheduler.LinearLR(
             self.optimizer,
             start_factor=0.1,
             total_iters=config.warmup_steps
         )
 
-        # 多阶段阶梯递减（step decay），如果你想在某些step后直接降低学习率
+        # Multi-stage step decay if you want to lower the learning rate directly after certain steps
         # self.scheduler = torch.optim.lr_scheduler.MultiStepLR(
         #     self.optimizer,
-        #     milestones=[10000, 20000],  # 在这些step时降低学习率
-        #     gamma=0.1                   # 每次降低为原来的0.1倍
+        # milestones=[10000, 20000], # Lower the learning rate at these steps
+        # gamma=0.1 # Reduce to 0.1x of the previous value each time
         # )
 
         # self.scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -2757,10 +2757,10 @@ class SimpleDiTActionTrainer:
         # )
         # self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         #     self.optimizer,
-        #     T_max=config.max_steps,   # 一个周期的步数，通常设为最大训练步数
-        #     eta_min=1e-6              # 最低学习率，可根据需要调整
+        # T_max=config.max_steps, # Number of steps in one cycle, usually set to max training steps
+        # eta_min=1e-6 # Minimum learning rate; adjust as needed
         # )
-        #多阶段
+        # Multi-stage
         # self.warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
         #     self.optimizer,
         #     start_factor=0.1,
@@ -2769,7 +2769,7 @@ class SimpleDiTActionTrainer:
         # )
         # self.decay_scheduler = torch.optim.lr_scheduler.MultiStepLR(
         #     self.optimizer,
-        #     milestones=[10000,40000],  # 递减点
+        # milestones=[10000,40000], # Decay milestones
         #     gamma=0.1
         # )
         # self.scheduler = torch.optim.lr_scheduler.SequentialLR(
@@ -2778,10 +2778,10 @@ class SimpleDiTActionTrainer:
         #     milestones=[config.warmup_steps]
         # )
 
-        # 损失函数
+        # Loss function
         # self.criterion = torch.nn.MSELoss()
         
-        # 检查点保存目录
+        # Checkpoint save directory
         self.save_dir = Path(config.save_folder)
         self.save_dir.mkdir(parents=True, exist_ok=True)
         
@@ -2794,28 +2794,28 @@ class SimpleDiTActionTrainer:
         """保存检查点"""
         checkpoint_dir = self.save_dir / f"step_{step}"
         
-        # 检查是否已存在且不允许覆盖
+        # Check whether it already exists and overwrite is disabled
         if checkpoint_dir.exists() and not self.config.save_overwrite:
             raise FileExistsError(f"Checkpoint directory {checkpoint_dir} already exists. Use save_overwrite=True to overwrite.")
         
-        # 保存模型状态
+        # Save model state
         if get_global_rank() == 0:
-            # 创建检查点目录
+            # Create the checkpoint directory
             checkpoint_dir.mkdir(exist_ok=True)
             
-            # 将新检查点添加到列表
+            # Add the new checkpoint to the list
             self.checkpoints.append(checkpoint_dir)
 
             if not self.config.use_fsdp:
                 checkpoint_path = checkpoint_dir / "model.pt"
-                # 如果需要微调vision model，则保存其状态
+                # Save the vision model state if it needs fine-tuning
                 torch.save({
                     'model_state_dict': self.model.state_dict(),
                     'vision_model_state_dict': self.vision_model.state_dict() if self.config.ft_vit else None,
                     'optimizer_state_dict': self.optimizer.state_dict(),
                     'scheduler_state_dict': self.scheduler.state_dict(),
                     'global_step': self.global_step,
-                    'epoch': self.epoch, # 这个值没有更新
+                    'epoch': self.epoch, # This value is not updated
                     'config': self.config.__dict__,
                 }, checkpoint_path)
 
@@ -2832,35 +2832,35 @@ class SimpleDiTActionTrainer:
                 }
                 torch.save(checkpoint, checkpoint_path)
             
-            # 保存配置为YAML文件
+            # Store the configurationasYAMLfile
             config_yaml_path = checkpoint_dir / "config.yaml"
             with open(config_yaml_path, 'w') as f:
-                # 将配置对象转换为字典，然后序列化为YAML
+                # Convert the config object to a dict, then serialize it as YAML
                 yaml.dump(self.config.__dict__, f, default_flow_style=False)
             
             log.info(f"Config saved to {config_yaml_path}")
 
-            # 创建latest链接
+            # Create the latest link
             latest_path = self.save_dir / "latest"
 
-            # 先删除旧的链接（如果存在）
+            # Delete the old link first if it exists
             if latest_path.exists() or latest_path.is_symlink():
                 try:
                     latest_path.unlink()
                 except OSError as e:
                     log.warning(f"Failed to remove old latest link: {e}")
             
-            # 创建新的符号链接
+            # Create a new symlink
             try:
                 latest_path.symlink_to(checkpoint_dir.name, target_is_directory=True)
                 log.info(f"Created latest link: {latest_path} -> {checkpoint_dir.name}")
             except FileExistsError:
-                # 如果链接已经存在，检查是否指向正确的目录
+                # If the link already exists, check whether it points to the correct directory
                 try:
                     if latest_path.resolve().name == checkpoint_dir.name:
                         log.info(f"Latest link already points to correct checkpoint: {checkpoint_dir.name}")
                     else:
-                        # 强制删除并重新创建
+                        # Force-delete and recreate it
                         latest_path.unlink()
                         latest_path.symlink_to(checkpoint_dir.name, target_is_directory=True)
                         log.info(f"Updated latest link to: {checkpoint_dir.name}")
@@ -2871,10 +2871,10 @@ class SimpleDiTActionTrainer:
             
             log.info(f"Checkpoint saved to {checkpoint_path}")
         
-        # 同步所有进程
+        # Synchronize all processes
         barrier()
         
-        # 删除旧检查点
+        # Delete old checkpoints
         self._remove_old_checkpoints()
         
         return str(checkpoint_dir)
@@ -2882,10 +2882,10 @@ class SimpleDiTActionTrainer:
     def _remove_old_checkpoints(self) -> None:
         """删除旧的检查点以保持指定的数量"""
         if self.config.save_num_checkpoints_to_keep <= 0:
-            return  # -1 或 0 表示保留所有检查点
+            return  # -1 or 0 means keep all checkpoints
         
         while len(self.checkpoints) > self.config.save_num_checkpoints_to_keep:
-            self._remove_checkpoint(0)  # 删除最旧的检查点
+            self._remove_checkpoint(0)  # Delete the oldest checkpoint
     
     def _remove_checkpoint(self, idx: int = 0) -> None:
         """删除指定索引的检查点"""
@@ -2894,16 +2894,16 @@ class SimpleDiTActionTrainer:
         
         oldest_checkpoint = self.checkpoints.pop(idx)
         
-        # 同步所有进程
+        # Synchronize all processes
         # barrier()
         
-        # 只有全局rank 0删除文件
+        # Only global rank 0 deletes files
         if get_global_rank() == 0 and oldest_checkpoint.is_dir():
             try:
                 shutil.rmtree(oldest_checkpoint, ignore_errors=True)
                 log.info(f"Removed old checkpoint: {oldest_checkpoint}")
                 
-                # 检查是否需要更新latest链接
+                # Check whether the latest link needs updating
                 latest_path = self.save_dir / "latest"
                 if latest_path.exists() and latest_path.resolve() == oldest_checkpoint.resolve():
                     latest_path.unlink()
@@ -2912,7 +2912,7 @@ class SimpleDiTActionTrainer:
             except Exception as e:
                 log.warning(f"Failed to remove checkpoint {oldest_checkpoint}: {e}")
         
-        # 再次同步
+        # Synchronize again
         # barrier()
     
     def load_checkpoint(self, checkpoint_path: str) -> None:
@@ -2934,27 +2934,27 @@ class SimpleDiTActionTrainer:
         else:
             if Path(checkpoint_path).is_dir():
                 checkpoint_path = Path(checkpoint_path) / "fsdp_model.pt"
-            # 读取检查点（rank0加载后广播）
+            # Read the checkpoint (rank 0 loads it, then broadcasts)
             if dist.get_rank() == 0:
                 checkpoint = torch.load(checkpoint_path)
             else:
                 checkpoint = {}
-            dist.broadcast_object_list([checkpoint], src=0)  # 广播到所有rank
+            dist.broadcast_object_list([checkpoint], src=0)  # Broadcast to all ranks
 
-            # 恢复模型和优化器状态
+            # Restore model and optimizer states
             self.model.load_state_dict(checkpoint["model"])
             optim_state = checkpoint["optimizer"]
             optim_state = FSDP.optim_state_dict_to_load(optim_state, self.model, self.optimizer)
             self.optimizer.load_state_dict(optim_state)
 
-            # 恢复调度器状态（所有rank同步执行）
+            # Restore scheduler state on all ranks
             self.scheduler.load_state_dict(checkpoint["scheduler"])
-            self.epoch  = checkpoint["epoch"]  # 手动设置epoch
+            self.epoch  = checkpoint["epoch"]  # Set epoch manually
         
             if self.config.ft_vit:
                 self.vision_model.load_state_dict(checkpoint['vision_model_state_dict'])
         
-        # 重建检查点列表（从已有的检查点目录扫描）
+        # Rebuild the checkpoint list by scanning existing checkpoint directories
         self._rebuild_checkpoint_list()
         
         log.info(f"Checkpoint loaded from {checkpoint_path}")
@@ -2966,7 +2966,7 @@ class SimpleDiTActionTrainer:
         if not self.save_dir.exists():
             return
         
-        # 扫描所有step_*目录
+        # Scan all step_* directories
         for checkpoint_dir in self.save_dir.iterdir():
             if checkpoint_dir.is_dir() and checkpoint_dir.name.startswith("step_"):
                 try:
@@ -2975,7 +2975,7 @@ class SimpleDiTActionTrainer:
                 except (ValueError, IndexError):
                     continue
         
-        # 按步数排序
+        # Sort by step number
         self.checkpoints.sort(key=lambda x: int(x.name.split("_")[1]))
         
         log.info(f"Found {len(self.checkpoints)} existing checkpoints")
@@ -2987,19 +2987,19 @@ class SimpleDiTActionTrainer:
             self.vision_model.train()
         self.optimizer.zero_grad()
         
-        # 移动数据到设备
+        # Move data to the device
         batch = move_to_device(batch, self.device)
         self.text_model = self.text_model.to(self.device)
         self.vision_model = self.vision_model.to(self.device)
         
-        # 前向传播
+        # Forward pass
         input_ids = batch["input_ids"].to(self.device)
         pixel_values = batch["pixel_values"].to(self.device, dtype=self.train_dtype)
         text_attention_mask = batch.get("text_attention_mask")
         if text_attention_mask is not None:
             text_attention_mask = text_attention_mask.to(self.device, ) #dtype=self.train_dtype
 
-        # 准备目标动作，确保数据类型正确
+        # Prepare target actions and ensure the dtype is correct
         target_actions = batch["action"].to(self.device, dtype=self.train_dtype)
         proprio = batch.get("proprio")
         if proprio is not None:
@@ -3016,11 +3016,11 @@ class SimpleDiTActionTrainer:
             text_embeds = self.text_model(input_ids=batch["input_ids"],attention_mask=batch.get("text_attention_mask")).last_hidden_state.detach()  
         else:
             outputs = self.text_model(input_ids=batch["input_ids"],attention_mask=batch["text_attention_mask"],    
-                                        return_dict=True,          # 返回 ModelOutput 对象
-                                        output_hidden_states=True  # 要所有层的 hidden_states)
+                                        return_dict=True,          # Return a ModelOutput object
+                                        output_hidden_states=True  # Need hidden_states from all layers)
             )
             hidden_states = outputs.hidden_states          # Tuple[embedding, layer1, ..., layerN]
-            last_hidden_state = hidden_states[-1]  # 获取最后一层的 hidden state
+            last_hidden_state = hidden_states[-1]  # Get the hidden state from the last layer
             text_embeds = last_hidden_state.detach()
 
         image_embeds = self.vision_model(pixel_values=batch["pixel_values"]).last_hidden_state
@@ -3050,26 +3050,26 @@ class SimpleDiTActionTrainer:
                 )
         # e_time = time.time()
         # print(f"Model forward done. Time taken: {e_time - s_time:.2f} seconds")
-        # 计算损失
+        # Compute loss
         diff_pred = outputs['diffusion_pred']
         diff_target = outputs['diffusion_target']
         action_loss = F.mse_loss(diff_pred, diff_target, reduction="mean")
         # loss = outputs["loss"]
         
-        # 反向传播
+        # Backpropagation
         action_loss.backward()
         
-        # 梯度裁剪
+        # Gradient clipping
         torch.nn.utils.clip_grad_norm_(
             self.model.parameters(), 
             self.config.max_grad_norm
         )
         
-        # 优化器步骤
+        # Optimizer step
         self.optimizer.step()
         self.scheduler.step()
         
-        # 收集指标
+        # Collect metrics
         metrics = {
             "train/loss": action_loss.item(),
             "train/lr": self.scheduler.get_last_lr()[0],
@@ -3099,7 +3099,7 @@ class SimpleDiTActionTrainer:
         #         config=cfg.asdict(exclude=["wandb"]),
         #     )
 
-        # 初始化W&B
+        # Initialize W&B
         wandb_dir = Path(self.config.save_folder) / "wandb"
         wandb_dir.mkdir(parents=True, exist_ok=True)
         if self.config.wandb_project and get_global_rank() == 0:
@@ -3113,7 +3113,7 @@ class SimpleDiTActionTrainer:
         
         config_yaml_path = Path(self.config.save_folder) / "config.yaml"
         with open(config_yaml_path, 'w') as f:
-            # 将配置对象转换为字典，然后序列化为YAML
+            # Convert the config object to a dict, then serialize it as YAML
             yaml.dump(self.config.__dict__, f, default_flow_style=False)
         
         log.info(f"Config saved to {config_yaml_path}")
@@ -3127,7 +3127,7 @@ class SimpleDiTActionTrainer:
                 if self.global_step >= self.config.max_steps:
                     break
                 
-                # 训练步骤
+                # Training step
                 # print(f"Start train step...")
                 # s_time = time.time()
                 metrics = self.train_step(batch)
@@ -3138,7 +3138,7 @@ class SimpleDiTActionTrainer:
                 
                 self.global_step += 1
                 
-                # 记录指标
+                # Log metrics
                 if self.global_step % self.config.log_interval == 0:
                     avg_loss = running_loss / self.config.log_interval
                     running_loss = 0.0
@@ -3165,7 +3165,7 @@ class SimpleDiTActionTrainer:
                         if self.config.wandb_project:
                             wandb.log(metrics, step=self.global_step)
                 
-                # 保存检查点
+                # Save checkpoint
                 if self.global_step % self.config.save_interval == 0:
                     try:
                         checkpoint_path = self.save_checkpoint(self.global_step)
@@ -3176,11 +3176,11 @@ class SimpleDiTActionTrainer:
                         # log.warning(f"Checkpoint save failed: {e}")
                         print(f"Checkpoint save failed: {e}")
                     
-                    # 清理GPU内存
+                    # Clear GPU memory
                     gc.collect()
                     torch.cuda.empty_cache()
         
-        # 保存最终检查点
+        # Save the final checkpoint
         if get_global_rank() == 0:
             final_checkpoint = self.save_checkpoint(self.global_step)
             log.info(f"Final checkpoint saved to {final_checkpoint}")
@@ -3197,7 +3197,7 @@ class SimpleDiTActionTrainer:
                     shutil.rmtree(checkpoint_dir, ignore_errors=True)
                     log.info(f"Removed checkpoint: {checkpoint_dir}")
             
-            # 清理latest链接
+            # Clean up the latest link
             latest_path = self.save_dir / "latest"
             if latest_path.exists():
                 latest_path.unlink()

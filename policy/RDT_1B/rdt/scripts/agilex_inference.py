@@ -324,7 +324,7 @@ class RosOperator:
         joint_state_msg = JointState()
         joint_state_msg.header = Header()
         joint_state_msg.header.stamp = rospy.Time.now()  # Set timestep
-        joint_state_msg.name = ['joint0', 'joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']  # 设置关节名称
+        joint_state_msg.name = ['joint0', 'joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']  # Set joint names
         joint_state_msg.position = left
         self.puppet_arm_left_publisher.publish(joint_state_msg)
         joint_state_msg.position = right
@@ -379,7 +379,7 @@ class RosOperator:
             joint_state_msg = JointState()
             joint_state_msg.header = Header()
             joint_state_msg.header.stamp = rospy.Time.now()  # Set the timestep
-            joint_state_msg.name = ['joint0', 'joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']  # 设置关节名称
+            joint_state_msg.name = ['joint0', 'joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']  # Set joint names
             joint_state_msg.position = left_arm
             self.puppet_arm_left_publisher.publish(joint_state_msg)
             joint_state_msg.position = right_arm
@@ -416,8 +416,8 @@ class RosOperator:
             traj_right[-1] = right[-1]
             joint_state_msg = JointState()
             joint_state_msg.header = Header()
-            joint_state_msg.header.stamp = rospy.Time.now()  # 设置时间戳
-            joint_state_msg.name = ['joint0', 'joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']  # 设置关节名称
+            joint_state_msg.header.stamp = rospy.Time.now()  # settime
+            joint_state_msg.name = ['joint0', 'joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6']  # Set joint names
             joint_state_msg.position = traj_left
             self.puppet_arm_left_publisher.publish(joint_state_msg)
             joint_state_msg.position = traj_right

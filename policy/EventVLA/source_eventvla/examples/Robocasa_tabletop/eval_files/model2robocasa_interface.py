@@ -152,7 +152,7 @@ class PolicyWarper:
         
         # raw_actions shape: (B, chunk, D)
         if self.action_ensemble:
-            # 对batch中的每个样本进行ensemble
+            # forbatchin samplerowensemble
             batch_size = raw_actions.shape[0]
             ensembled_actions = []
             for b in range(batch_size):

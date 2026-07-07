@@ -26,7 +26,7 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 from deploy.client import Client
 
 LIBERO_DUMMY_ACTION = [0.0] * 6 + [-1.0]
-LIBERO_ENV_RESOLUTION = 256  # resolution used to render training数据
+LIBERO_ENV_RESOLUTION = 256  # resolution used to render training data
 
 
 @dataclasses.dataclass

@@ -1,6 +1,6 @@
 
 # ============================================
-# 激活 Conda 环境
+# activate Conda
 # ============================================
 if [ -n "$CONDA_ROOT" ] && [ -n "$CONDA_ENV" ]; then
   echo "[conda] 从 $CONDA_ROOT 激活环境: $CONDA_ENV"

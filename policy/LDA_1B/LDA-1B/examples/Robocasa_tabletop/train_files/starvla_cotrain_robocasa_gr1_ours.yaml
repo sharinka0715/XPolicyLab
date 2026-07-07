@@ -17,7 +17,7 @@ framework:
 
   action_model:
     action_model_type: DiT-B
-    hidden_size: 2560     # 和 DiT 最后的 projection 对应，用于 ActionDecoder
+    hidden_size: 2560     # Match DiT final projection for ActionDecoder
     add_pos_embed: True
     max_seq_len: 1024
     action_dim: 29
@@ -40,8 +40,8 @@ framework:
     patch_shape: [1, 1, 1]  # Use list format for OmegaConf (will be converted to tuple in code)
     obs_loss_weight: 1.0
     training_task_weights: [1, 1, 1, 1]
-    diffusion_model_cfg:    # DiT Transformers 的参数
-      cross_attention_dim: 2048 # VLM 的 dim
+    diffusion_model_cfg:    # DiT Transformer parameters
+      cross_attention_dim: 2048 # VLM dimension
       dropout: 0.2
       final_dropout: true
       interleave_self_attention: true

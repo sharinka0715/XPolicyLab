@@ -1,12 +1,12 @@
 #!/bin/bash
-# 诊断脚本：检查任务卡住和异常的原因
+# : checktaskand
 
 echo "=========================================="
 echo "  任务诊断报告"
 echo "=========================================="
 echo ""
 
-# 1. 检查主进程状态
+# 1. checkprocessstate
 echo "【1】主进程状态:"
 MAIN_PID=$(pgrep -f "python.*agibot_h5.py" | head -1)
 if [ -n "$MAIN_PID" ]; then
@@ -17,7 +17,7 @@ else
 fi
 echo ""
 
-# 2. 检查 Ray worker 进程
+# 2. check Ray worker process
 echo "【2】Ray Worker 进程:"
 WORKER_COUNT=$(pgrep -f "ray::save_as_lerobot_dataset" | wc -l)
 echo "  运行中的 worker 数: $WORKER_COUNT"
@@ -31,7 +31,7 @@ else
 fi
 echo ""
 
-# 3. 检查错误日志
+# 3. check
 echo "【3】最近的错误 (output.txt 最后 5 个):"
 if [ -f "output.txt" ]; then
     tail -20 output.txt | grep -E "task_|Exception|Error" | tail -5
@@ -42,7 +42,7 @@ else
 fi
 echo ""
 
-# 4. 检查失败的任务类型
+# 4. check task
 echo "【4】失败任务统计:"
 if [ -f "output.txt" ]; then
     echo "  numpy 导入错误: $(grep -c "numpy.core\|Error importing numpy" output.txt 2>/dev/null || echo "0")"
@@ -50,7 +50,7 @@ if [ -f "output.txt" ]; then
 fi
 echo ""
 
-# 5. 检查 conda 环境
+# 5. check conda
 echo "【5】Conda 环境:"
 if command -v conda &> /dev/null; then
     CURRENT_ENV=$(conda info --envs | grep '*' | awk '{print $1}')
@@ -61,14 +61,14 @@ else
 fi
 echo ""
 
-# 6. 检查 Python 路径
+# 6. check Python path
 echo "【6】Python 环境:"
 echo "  Python 路径: $(which python)"
 echo "  Python 版本: $(python --version 2>&1)"
 echo "  PYTHONPATH: ${PYTHONPATH:-未设置}"
 echo ""
 
-# 7. 检查 Ray 状态
+# 7. check Ray state
 echo "【7】Ray 集群状态:"
 if command -v ray &> /dev/null; then
     ray status 2>/dev/null | head -15 || echo "  ⚠️  无法获取 Ray 状态"
@@ -77,7 +77,7 @@ else
 fi
 echo ""
 
-# 8. 任务完成情况
+# 8. taskcomplete
 echo "【8】任务完成情况:"
 TOTAL_TASKS=$(ls /mnt/nas-data-4/bearbee/AgiBotWorld-Beta/task_info/*.json 2>/dev/null | wc -l)
 COMPLETED=$(find /mnt/nas-data-1/yangyandan/lerobot/agibot/agibotworld -maxdepth 1 -type d 2>/dev/null | wc -l)

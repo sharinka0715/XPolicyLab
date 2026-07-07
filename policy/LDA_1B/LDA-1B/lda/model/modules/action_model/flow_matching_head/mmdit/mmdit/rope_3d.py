@@ -19,7 +19,7 @@ class Rotary3D(nn.Module):
         super().__init__()
         self.dim = dim
         self.base = base
-        # 将 dim 平均分配到 T/H/W
+        # dim to T/H/W
         if dim % 3 != 0:
             warning(f"dim % 3 != 0, dim best be divisible by 3 for 3D RoPE, but got {dim}")
         self.dim_h = dim // 3
@@ -111,12 +111,12 @@ class Rotary1D(nn.Module):
 # -----------------------------
 if __name__ == "__main__":
     B = 2
-    # 图像 token: 3帧, 4x4 patch, 256维
+    # Image token: 3frame, 4x4 patch, 256
     img_tokens = torch.randn(B, 3, 4, 4, 256)
-    # action token: 21步, 128维
+    # action token: 21, 128
     act_tokens = torch.randn(B, 21, 1536)
 
-    # Linear 映射到统一 channel
+    # Linear to channel
     img_linear = nn.Linear(256, 1536)
     img_tokens_mapped = img_linear(img_tokens)
 

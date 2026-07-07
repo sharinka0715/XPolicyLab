@@ -231,11 +231,11 @@ class LeRobotDatasetWrapper(Dataset):
         return len(self.dataset)
 
     def __getitem__(self, item):
-        # 遵循上层索引；若直接通过 __getitem__ 调用，则使用全局 np.random
+        # Follow the parent index; if called directly through __getitem__, use global np.random
         return self.get(item, np.random)
     
     def get(self, item, rng):
-        # 严格使用传入的 item；只有在 item 非法时才回退到 rng 随机采样
+        # Use the provided item strictly; fall back to rng random sampling only when item is invalid
         if isinstance(item, (int, np.integer)) and 0 <= int(item) < len(self.dataset):
             idx = int(item)
         else:
@@ -289,7 +289,7 @@ class LeRobotDatasetWrapper(Dataset):
 
         instruction = data_item['task']
 
-        # 生成与动作同形状的padding掩码，pad位置标记为True
+        # generateandaction padding mask, pad positionsasTrue
         action_pad_mask = np.zeros_like(action, dtype=bool)
         # if pad_len_action > 0:
         #     action_pad_mask[:, -pad_len_action:] = True
@@ -447,8 +447,8 @@ class LeRobotDatasetWrapperAgiBotWorld(Dataset):
         actions_ori = quaternion_to_euler_numpy(actions_ori)
         actions_pos = data_item['actions.end.position'].cpu().numpy() 
         actions_eff = data_item['actions.effector.position'].cpu().numpy() 
-        # 拼接成右手(pos, ori, eff)+左手(pos, ori, eff)的格式
-        # 拼接 per hand: pos(3)+euler(3)+grip(1) => 7 dims per hand
+        # Concatenate into right hand(pos, ori, eff)+left hand(pos, ori, eff)
+        # per hand: pos(3)+euler(3)+grip(1) => 7 dims per hand
         left_vec = np.concatenate([actions_pos[:, 0], actions_ori[:, 0], actions_eff[:, 0:1]], axis=-1)   # (L,7)
         right_vec = np.concatenate([actions_pos[:, 1], actions_ori[:, 1], actions_eff[:, 1:1+1]], axis=-1)  # (L,7)
         actions = np.concatenate([right_vec, left_vec], axis=-1)  # (L,14)
@@ -478,7 +478,7 @@ class LeRobotDatasetWrapperAgiBotWorld(Dataset):
 
         instruction = data_item['task']
 
-        # 生成与动作同形状的padding掩码，pad位置标记为True
+        # generateandaction padding mask, pad positionsasTrue
         action_pad_mask = np.zeros_like(action, dtype=bool)
         if pad_len_action > 0:
             action_pad_mask[:, -pad_len_action:] = True
@@ -642,16 +642,16 @@ def debug_image_channel_order(save_dir: str = "./lerobot_debug"):
                 np.save(path.replace(".png", ".npy"), arr)
                 print(f"image libs unavailable, saved numpy array: {path.replace('.png', '.npy')}")
 
-    # 原样保存（假定为 RGB）
+    # Save as-is, assuming RGB
     as_is_path = os.path.join(save_dir, "as_is.png")
     save_image(as_is_path, img)
 
-    # 交换 R/B 后保存（相当于把 RGB 当 BGR 或反之）
+    # Save after swapping R/B, equivalent to treating RGB as BGR or vice versa
     swap_rb = img[:, :, ::-1].copy()
     swap_path = os.path.join(save_dir, "swap_rb.png")
     save_image(swap_path, swap_rb)
 
-    # 打印每通道均值，帮助直观判断
+    # Print per-channel means to make visual checks easier
     means = img.astype(np.float32).mean(axis=(0, 1))
     print(f"as_is channel means (C0,C1,C2): {means}")
     swap_means = swap_rb.astype(np.float32).mean(axis=(0, 1))
@@ -686,12 +686,12 @@ def export_lerobot_trajectory_video(ds,
     assert end_index > start_index, "end_index 需大于 start_index"
     num_frames = end_index - start_index
 
-    # 先渲染一帧确定尺寸
+    # Render one frame first to determine the size
     first_item = ds[start_index]
-    # 收集所有可视图像通道
+    # Collect all visible image channels
     def extract_images(item):
         imgs = []
-        # 优先使用显式列表
+        # Prefer the explicit list
         if 'images' in item and isinstance(item['images'], (list, tuple)) and len(item['images']) > 0:
             for im in item['images']:
                 if im is None:
@@ -702,7 +702,7 @@ def export_lerobot_trajectory_video(ds,
                 if arr.ndim == 3 and arr.shape[2] in (1, 3):
                     imgs.append(arr if arr.shape[2] == 3 else np.repeat(arr, 3, axis=2))
         else:
-            # 从字典自动发现图像键
+            # Auto-discover image keys from the dict
             for k, v in item.items():
                 if k in ('action', 'actions', 'state', 'observation', 'metadata', 'timestep', 'timestamp', 'frame_index', 'episode_index', 'index', 'task', 'task_index'):
                     continue
@@ -721,7 +721,7 @@ def export_lerobot_trajectory_video(ds,
     if len(imgs0) == 0:
         raise ValueError("未从数据集中解析到图像通道。请确认数据项包含 'images' 或图像键。")
     print('load images success')
-    # 确定动作维度数量（最多 max_action_dims）
+    # Determine the number of action dimensions, up to max_action_dims
     def extract_action_vec(item):
         act = item.get('action', None)
         if act is None:
@@ -738,7 +738,7 @@ def export_lerobot_trajectory_video(ds,
     first_act_vec = extract_action_vec(first_item)
     action_dims = 0 if first_act_vec is None else min(max_action_dims, int(first_act_vec.shape[0]))
     print('load action success')
-    # 预读取整段轨迹的动作序列（用于先画完整曲线）
+    # Pre-read the full trajectory action sequence to draw the full curve first
     actions_all = None
     if action_dims > 0:
         series = []
@@ -757,7 +757,7 @@ def export_lerobot_trajectory_video(ds,
             series.append(vec)
         actions_all = np.stack(series, axis=0)  # [T, D]
     print('load actions_all success')
-    # 创建画布：顶部一行图像横跨，下面为 action 网格（每行四个）
+    # Create the canvas: image row across the top, action grid below with four per row
     if action_dims > 0:
         action_cols = 4
         action_rows = int(ceil(action_dims / action_cols))
@@ -777,10 +777,10 @@ def export_lerobot_trajectory_video(ds,
             c = d % action_cols
             ax_action_list.append(fig.add_subplot(gs[r, c]))
     print('create ax_action_list success')
-    # 初始绘制
+    # Initial draw
     concat0 = imgs0[0]
     if len(imgs0) > 1:
-        # 横向拼接同高的多张图（假设尺寸一致；若不一致，可按最小高等比缩放）
+        # Horizontally concatenate images with the same height; if sizes differ, scale proportionally to the minimum height
         min_h = min(img.shape[0] for img in imgs0)
         resized = []
         for img in imgs0:
@@ -794,12 +794,12 @@ def export_lerobot_trajectory_video(ds,
     ax_img.axis('off')
     point_artists = []
     if action_dims > 0:
-        # 先画完整曲线，后续逐帧叠加当前帧的粗点（并移除上一帧的点）
+        # Draw the full curve first, then overlay a bold point for the current frame and remove the previous point
         for d in range(action_dims):
             ax = ax_action_list[d]
             if actions_all is not None:
                 ax.plot(actions_all[:, d], color='C0', linewidth=1.0)
-                # 固定坐标轴范围，避免闪烁
+                # Fix axis ranges to avoid flicker
                 ax.set_xlim(0, max(1, num_frames - 1))
                 finite_mask = np.isfinite(actions_all[:, d])
                 if finite_mask.any():
@@ -815,17 +815,17 @@ def export_lerobot_trajectory_video(ds,
             point_artists.append(None)
     fig.canvas.draw()
     print('draw fig success')
-    # 基于画布尺寸创建视频写入器（使用 RGBA 缓冲安全抓帧）
+    # Create the video writer from the canvas size, using the RGBA buffer for safer frame capture
     w, h = fig.canvas.get_width_height()
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     writer = cv2.VideoWriter(out_path, fourcc, fps, (w, h))
     print('create writer success')
-    # 不再累积历史，直接使用预先计算的 actions_all
+    # Do not accumulate history; use the precomputed actions_all directly
 
     for offset in range(num_frames):
         item = ds[start_index + offset]
 
-        # 图像
+        # Image
         imgs = extract_images(item)
         if len(imgs) == 0:
             continue
@@ -839,30 +839,30 @@ def export_lerobot_trajectory_video(ds,
                 row_imgs.append(img)
         concat_img = np.concatenate(row_imgs, axis=1)
 
-        # 绘制到画布
+        # Draw to the canvas
         ax_img.clear()
-        # 重绘图像轴
+        # Image
         ax_img.imshow(concat_img)
         ax_img.axis('off')
-        # 在每个 action 轴上叠加当前帧的粗点（移除上一帧的点）
+        # Overlay a bold current-frame point on each action axis and remove the previous point
         if action_dims > 0 and actions_all is not None:
             cur_idx = offset
             dims = actions_all.shape[1]
             for d in range(dims):
                 ax = ax_action_list[d]
-                # 移除上一帧的点
+                # Remove the previous frame point
                 if point_artists[d] is not None:
                     try:
                         point_artists[d].remove()
                     except Exception:
                         pass
                     point_artists[d] = None
-                # 绘制当前帧的点
+                # Draw the current frame point
                 if 0 <= cur_idx < actions_all.shape[0] and np.isfinite(actions_all[cur_idx, d]):
                     artist = ax.plot(cur_idx, actions_all[cur_idx, d], marker='o', markersize=7, color='C3', linewidth=0)[0]
                     point_artists[d] = artist
 
-        # 抓帧（RGBA 更稳妥）
+        # Capture the frame; RGBA is more robust
         fig.canvas.draw()
         buf = np.frombuffer(fig.canvas.buffer_rgba(), dtype=np.uint8)
         frame = buf.reshape((h, w, 4))

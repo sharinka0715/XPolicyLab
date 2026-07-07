@@ -1,18 +1,18 @@
 # XPolicyLab deploy: policy server env=uv; run setup_eval_policy_server.sh with this env.
 #!/usr/bin/env bash
-# MolmoAct2 一键安装（对应 INSTALLATION.md）
+# MolmoAct2 one-command install, corresponding to INSTALLATION.md
 #
 # Usage:
-#   bash install.sh          # lerobot 训练环境 + XPolicyLab（RoboDojo 默认，训练与 eval 共用）
-#   bash install.sh train    # 同上
-#   bash install.sh infer    # 仅上游 FastAPI server venv（非 XPolicyLab eval）
-#   bash install.sh all      # lerobot + XPolicyLab + FastAPI server两套 venv
+# bash install.sh # lerobot training environment + XPolicyLab(RoboDojo default, and eval use)
+# bash install.sh train # same as above
+# bash install.sh infer # only the upstream FastAPI server venv, not XPolicyLab eval
+# bash install.sh all # lerobot + XPolicyLab + FastAPI servertwo venvs
 #
-# 环境变量（可选）:
-#   MOLMOACT2_REPO       默认 https://github.com/allenai/molmoact2.git
-#   LEROBOT_REPO         默认 https://github.com/allenai/lerobot
-#   LEROBOT_BRANCH       默认 molmoact2-policy
-#   SKIP_XPOLICYLAB=1    跳过 XPolicyLab 安装
+# Optional environment variables:
+# MOLMOACT2_REPO default https://github.com/allenai/molmoact2.git
+# LEROBOT_REPO default https://github.com/allenai/lerobot
+# LEROBOT_BRANCH default molmoact2-policy
+# SKIP_XPOLICYLAB=1 skip XPolicyLab installation
 
 set -euo pipefail
 

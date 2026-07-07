@@ -263,7 +263,7 @@ class DexboticVLMModel(DexboticPretrainedModel):
             self, image_features, cur_input_ids, cur_labels, cur_image_idx):
         num_images = (cur_input_ids == IMAGE_TOKEN_INDEX).sum()
         if num_images == 0:
-            # 用来跳过填充的空图像
+            # useskippad Image
             cur_image_features = image_features[cur_image_idx]
             cur_input_embeds_1 = self.backbone.embed_tokens(cur_input_ids)
             cur_input_embeds = torch.cat(

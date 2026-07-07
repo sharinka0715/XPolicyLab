@@ -38,10 +38,10 @@ class CategorySpecificLinear(nn.Module):
         self.init_params()
 
     def init_params(self):
-        # 对每个 category 独立初始化，模仿 nn.Linear
+        # for category , nn.Linear
         for i in range(self.num_categories):
             tmp_linear = nn.Linear(self.W.shape[1], self.W.shape[2])  # in_dim -> hidden_dim
-            self.W.data[i] = tmp_linear.weight.t().clone()  # 因为 Linear 是 (out, in)，我们存 (in, out)
+            self.W.data[i] = tmp_linear.weight.t().clone()  # as Linear (out, in), (in, out)
             self.b.data[i] = tmp_linear.bias.clone()
 
     def forward(self, x, cat_ids):
@@ -536,7 +536,7 @@ def test_forward_not_equivalent():
     ref = nn.Linear(Din, Dout).to(device)
     test = CategorySpecificLinear(32, Din, Dout).to(device)
 
-    # 强行拷贝权重（注意维度顺序不同）
+    # row(NotedimensionOrder)
     test.W.data[0].copy_(ref.weight.data.T)
     test.b.data[0].copy_(ref.bias.data)
 
@@ -616,7 +616,7 @@ def test_divergence_num_categories_gt_1(
     B, T, Din, Dout = 8, 16, 32, 64
 
     x = torch.randn(B, T, Din, device=device)
-    cat_ids = torch.zeros(B, dtype=torch.long, device=device)  # 只用 id=0
+    cat_ids = torch.zeros(B, dtype=torch.long, device=device)  # onlyuse id=0
 
     # reference
     ref = nn.Linear(Din, Dout).to(device)
@@ -624,7 +624,7 @@ def test_divergence_num_categories_gt_1(
     # test
     test = CategorySpecificLinear(num_categories, Din, Dout).to(device)
     import pdb; pdb.set_trace()
-    # 对齐第 0 个 category 的参数
+    # for 0 category parameter
     test.W.data[0].copy_(ref.weight.data.T)
     test.b.data[0].copy_(ref.bias.data)
 
@@ -646,7 +646,7 @@ def test_divergence_num_categories_gt_1(
         opt_ref.step()
         opt_test.step()
 
-        # 每 1000 步记录一次 divergence
+        # 1000 divergence
         if step % 1000 == 0:
             w_diff = (ref.weight - test.W[0].T).abs().mean().item()
             divergences.append((step, w_diff))

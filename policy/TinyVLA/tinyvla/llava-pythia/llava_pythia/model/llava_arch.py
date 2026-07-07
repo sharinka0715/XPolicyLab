@@ -71,7 +71,7 @@ class LlavaMetaForCausalLM(ABC):
         pass
     # def encode_images(self, images, proj=True):
     #     image_features = self.get_model().get_vision_tower()(images)
-    #     if proj: # 默认true，则会执行
+    # if proj: # defaulttrue, row
     #         image_features = self.get_model().mm_projector(image_features)
     #     return image_features
     @abstractmethod
@@ -119,7 +119,7 @@ class LlavaMetaForCausalLM(ABC):
                     new_labels.append(labels[batch_idx])
                 cur_image_idx += 1
                 continue
-            image_token_indices = torch.where(cur_input_ids == IMAGE_TOKEN_INDEX)[0] # 找到图像在输入中的位置
+            image_token_indices = torch.where(cur_input_ids == IMAGE_TOKEN_INDEX)[0] # toImageinInputin
             cur_new_input_embeds = []
             if labels is not None:
                 cur_labels = labels[batch_idx]
@@ -139,15 +139,15 @@ class LlavaMetaForCausalLM(ABC):
                         cur_new_labels.append(cur_labels[image_token_start:image_token_start+1])
                         cur_labels = cur_labels[image_token_start+2:]
                 else:
-                    cur_new_input_embeds.append(self.get_model().embed_in(cur_input_ids[:image_token_start])) # 先编码图片之前的文本
-                    cur_new_input_embeds.append(cur_image_features) # 拼接上图片的特征
+                    cur_new_input_embeds.append(self.get_model().embed_in(cur_input_ids[:image_token_start])) # Encode the text before the image first
+                    cur_new_input_embeds.append(cur_image_features) # Concatenate the image features
                     if labels is not None:
                         cur_new_labels.append(cur_labels[:image_token_start])
                         cur_new_labels.append(torch.full((cur_image_features.shape[0],), IGNORE_INDEX, device=labels.device, dtype=labels.dtype))
                         cur_labels = cur_labels[image_token_start+1:]
                 cur_image_idx += 1
                 if getattr(self.config, 'tune_mm_mlp_adapter', False) and getattr(self.config, 'mm_use_im_start_end', False):
-                    cur_input_ids = cur_input_ids[image_token_start+2:] # 图片之后的文本
+                    cur_input_ids = cur_input_ids[image_token_start+2:] # Text after the image
                 else:
                     cur_input_ids = cur_input_ids[image_token_start+1:]
                 image_token_indices = torch.where(cur_input_ids == IMAGE_TOKEN_INDEX)[0]
@@ -261,7 +261,7 @@ class MiphaMetaForCausalLM(ABC):
 
     # def encode_images(self, images, proj=True):
     #     image_features = self.get_model().get_vision_tower()(images)
-    #     if proj: # 默认true，则会执行
+    # if proj: # defaulttrue, row
     #         image_features = self.get_model().mm_projector(image_features)
     #     return image_features
     @abstractmethod

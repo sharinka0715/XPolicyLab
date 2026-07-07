@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# RDT_1B 一键安装（对应 INSTALLATION.md）
+# RDT_1B one-command install, corresponding to INSTALLATION.md
 #
-# 环境变量（可选）:
-#   RDT_CONDA_ENV       conda 环境名，默认 rdt_1b
-#   RDT_SKIP_CONDA_CREATE=1  跳过 conda create（环境已存在时）
-#   RDT_SKIP_WEIGHTS=1       跳过权重准备（不下载、不软链）
-#   RDT_WEIGHTS_SRC          已有权重根目录，软链到 weights/RDT/（优先于下载）
+# Optional environment variables:
+# RDT_CONDA_ENV conda environment name, default rdt_1b
+# RDT_SKIP_CONDA_CREATE=1 skip conda create when the environment already exists
+# RDT_SKIP_WEIGHTS=1 skip weight preparation, no download and no symlink
+# RDT_WEIGHTS_SRC existing weights root directory, symlinked to weights/RDT/, preferred over download
 
 set -euo pipefail
 

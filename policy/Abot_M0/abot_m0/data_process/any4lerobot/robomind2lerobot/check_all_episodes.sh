@@ -1,5 +1,5 @@
 #!/bin/bash
-# 批量检查所有数据集的 episode 数量
+# checkalldata episode number
 
 SRC_PATH="/mnt/nas-data-4/gaowo.cyz/RoboMIND"
 OUTPUT_PATH="/mnt/xlab-nas-2/vla_dataset/lerobot/robomind_11_new"
@@ -25,7 +25,7 @@ for embodiment in "${EMBODIMENTS[@]}"; do
         continue
     fi
     
-    # 遍历所有任务目录
+    # iteratealltaskdirectory
     for task_dir in "$dataset_base"/*; do
         if [ -d "$task_dir" ]; then
             task_name=$(basename "$task_dir")

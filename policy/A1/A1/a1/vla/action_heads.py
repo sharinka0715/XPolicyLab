@@ -166,7 +166,7 @@ class FlowMatchingActionHead(nn.Module):
             raise ValueError(f"Unsupported pos_offset shape for mask: {tuple(pos_offset.shape)}")
         valid_prefix_lengths = valid_prefix_lengths.clamp_min(0).clamp_max(past_len_for_mask).view(B, 1)
         prefix_mask = (prefix_positions < valid_prefix_lengths).to(torch.int64)  # 1 for valid, 0 for padding
-        # suffix mask: 后缀均为有效
+        # suffix mask: afteras
         suffix_mask = torch.ones((B, L), dtype=torch.int64, device=tgt.device)
         attention_mask_2d = torch.cat([prefix_mask, suffix_mask], dim=1)  # (B, past_len_for_mask + L)
         
@@ -203,9 +203,9 @@ class FlowMatchingActionHead(nn.Module):
         tgt = self.build_suffix_tokens(state, x_t, t).to(qwen2_dtype)  # (B,1+T,Hg)
             
         # seq = torch.cat([memory, tgt], dim=1)  # (B,P+1+T,Hg)
-        # 正确设置 position_ids：需在 prefix 长度基础上递增，匹配缓存的 KV 长度
+        # set position_ids: in prefix , cache KV
         batch_size, tgt_len = tgt.shape[:2]
-        # 优先使用 caller 提供的有效长度偏移（忽略 padding 的有效 token 数），否则回退到 KV 长度
+        # firstuse caller ( padding token ), otherwisefallbackto KV
         if pos_offset is not None:
             # pos_offset: (B,)
             base = torch.arange(tgt_len, device=tgt.device, dtype=torch.long).unsqueeze(0).expand(batch_size, -1)
@@ -277,7 +277,7 @@ class FlowMatchingActionHead(nn.Module):
         # Beta(1.5,1)
         # t = torch.distributions.Beta(torch.tensor(1.5, device=device, dtype=dtype),
         #                              torch.tensor(1.0, device=device, dtype=dtype)).sample((B,))
-        # Beta(1.5,1) — 在混合精度下强制使用 float32 参数，避免 bf16/fp16 的数值不稳定
+        # Beta(1.5,1) - inunderuse float32 parameter, avoid bf16/fp16 value
         t = torch.distributions.Beta(
             torch.tensor(1.5, device=device, dtype=torch.float32),
             torch.tensor(1.0, device=device, dtype=torch.float32)
@@ -618,16 +618,16 @@ class DiffusionActionHead(nn.Module):
 # class NoisePredictionModelWithFiLM(nn.Module):
 #     def __init__(self, transformer_hidden_dim, hidden_dim, action_dim=7, num_layers=4):
 #         super().__init__()
-#         # - 起始值: 4层 （平衡表达能力和计算效率）
-#         # - 最小值: 2层 （保证基本表达能力）
-#         # - 最大值: 8层 （避免过拟合和计算开销）
+# # - value: 4 (andcompute)
+# # - value: 2 ()
+# # - value: 8 (avoidandcompute)
         
-#         # 只对noisy_actions做输入投影
+# # onlyfornoisy_actionsInput
 #         self.input_proj = nn.Linear(action_dim, hidden_dim)
 
 #         self.state_proj = nn.Linear(NUM_ACTIONS_CHUNK * action_dim * hidden_dim, hidden_dim)
         
-#         # 改进的condition处理：更好地融合时间步和观察信息
+# # conditionprocess: timeandobservation
 #         self.condition_proj = nn.Sequential(
 #             nn.Linear(hidden_dim * 2, hidden_dim),  # actions + timestep
 #             nn.LayerNorm(hidden_dim),
@@ -635,7 +635,7 @@ class DiffusionActionHead(nn.Module):
 #             nn.Linear(hidden_dim, hidden_dim)
 #         )
         
-#         # FiLM blocks保持不变
+# # FiLM blocks
 #         self.blocks = nn.ModuleList([
 #             FiLMBlock(hidden_dim, hidden_dim)
 #             for _ in range(num_layers)
@@ -653,18 +653,18 @@ class DiffusionActionHead(nn.Module):
 #         flattened = actions_hidden_states.reshape(B,-1)
 #         obs_condition = self.state_proj(flattened)
 
-#         # 改进的条件融合
+# #
 #         # obs_condition = actions_hidden_states.mean(dim=1)  # (B,hidden_dim)
 #         time_condition = timestep_embeddings.squeeze(1)   # (B, hidden_dim)
         
-#         # 拼接而不是相加，让模型学习如何组合这些信息
+# # , model
 #         fused_condition = torch.cat([obs_condition, time_condition], dim=-1)
 #         condition = self.condition_proj(fused_condition)  # (B, hidden_dim)
         
-#         # 输入处理：只使用noisy_actions
+# # Inputprocess: onlyusenoisy_actions
 #         x = self.input_proj(noisy_actions)  # (B, chunk_len, hidden_dim)
         
-#         # FiLM调制
+# # FiLM
 #         for block in self.blocks:
 #             x = block(x, condition)
             
@@ -721,7 +721,7 @@ class DiffusionTransformerActionHead(nn.Module):
             
         assert cond_dim != hidden_dim, "cond_dim must be equal to hidden_dim when do not use condition_adaptor"
 
-        # 添加参数初始化检查
+        # addparametercheck
         self._verify_parameters()
 
     def _verify_parameters(self):

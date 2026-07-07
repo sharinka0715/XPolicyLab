@@ -1,8 +1,8 @@
 #!/bin/bash
-# 批量解压指定路径下的压缩文件
+# pathunder file
 
 TARGET_DIR="/mnt/xlab-nas-2/vla_dataset/lerobot/Galaxea/lerobot"
-MAX_JOBS=10  # 最大并发数
+MAX_JOBS=10  # Translated comment
 
 if [ ! -d "$TARGET_DIR" ]; then
     echo "Error: Directory does not exist: $TARGET_DIR"
@@ -16,7 +16,7 @@ echo "批量解压文件: $TARGET_DIR"
 echo "=========================================="
 echo ""
 
-# 统计压缩文件数量
+# statisticsfilenumber
 TAR_GZ_COUNT=$(find . -maxdepth 1 -type f \( -name "*.tar.gz" -o -name "*.tgz" \) | wc -l)
 TOTAL=$TAR_GZ_COUNT
 
@@ -28,7 +28,7 @@ if [ $TOTAL -eq 0 ]; then
     exit 0
 fi
 
-# 解压函数
+# Translated comment
 extract_file() {
     local file="$1"
     local basename=$(basename "$file")
@@ -50,14 +50,14 @@ extract_file() {
     fi
 }
 
-# 导出函数以便在后台使用
+# inafteruse
 export -f extract_file
 
-# 并发解压
+# Translated comment
 echo "开始解压（最大并发数: $MAX_JOBS）..."
 echo ""
 
-# 处理 .tar.gz 文件
+# process.tar.gz file
 find . -maxdepth 1 -type f \( -name "*.tar.gz" -o -name "*.tgz" \) | while read -r file; do
     while (( $(jobs -r | wc -l) >= MAX_JOBS )); do
         wait -n
@@ -65,7 +65,7 @@ find . -maxdepth 1 -type f \( -name "*.tar.gz" -o -name "*.tgz" \) | while read 
     extract_file "$file" &
 done
 
-# 等待所有后台任务完成
+# waitallaftertaskcomplete
 wait
 
 echo ""

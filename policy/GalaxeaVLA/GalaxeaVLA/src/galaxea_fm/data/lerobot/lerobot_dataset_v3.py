@@ -736,11 +736,11 @@ class LeRobotDataset(torch.utils.data.Dataset):
             self.episodes = list(range(self.meta.total_episodes))
 
         valid_episode_len = self.meta.total_episodes
-        # 从meta中读取原始列表，并截断到有效长度
+        # frommetainreadcolumn, to
         from_list = self.meta.episodes["dataset_from_index"][:valid_episode_len]
         to_list = self.meta.episodes["dataset_to_index"][:valid_episode_len]
 
-        # 构造和get_episode_data_index输出格式一致的字典
+        # andget_episode_data_index
         self.episode_data_index = {
             "from": torch.LongTensor(from_list),
             "to": torch.LongTensor(to_list)

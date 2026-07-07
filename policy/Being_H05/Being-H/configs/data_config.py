@@ -632,14 +632,14 @@ class RoboTwinEEFDataConfig(BaseDataConfig):
 DATA_CONFIG_MAP = {
     "libero_nonorm": LiberoNoNormDataConfig,
     "robocasa_human": RobocasaHumanDataConfig,
-    # RoboTwin: aloha-agilex / arx-x5 / piper / ur5 均为 14-dim 双臂 6+1+6+1，共用同一 config
+    # RoboTwin: aloha-agilex / arx-x5 / piper / ur5 are all 14-dim dual-arm 6+1+6+1, share the same config
     "robotwin_qpos": RoboTwinQposDataConfig,
     "robotwin_eef": RoboTwinEEFDataConfig,
     "robotwin_qpos_arx": RoboTwinQposDataConfig,
     "robotwin_qpos_piper": RoboTwinQposDataConfig,
     "robotwin_qpos_ur5": RoboTwinQposDataConfig,
     
-    "robodojo_qpos": RoboDojoQposDataConfig, # robodojo与RoboTwin一致，所以继承了RoboTwin的config
-    # franka-panda: 16-dim 双臂 7+1+7+1
+    "robodojo_qpos": RoboDojoQposDataConfig, # RoboDojo matches RoboTwin, so it inherits the RoboTwin config
+    # franka-panda: 16-dim dual arm 7+1+7+1
     "robotwin_qpos_franka": RoboTwinFrankaQposDataConfig,
 }

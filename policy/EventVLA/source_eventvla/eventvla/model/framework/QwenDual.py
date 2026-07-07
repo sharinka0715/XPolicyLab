@@ -65,7 +65,7 @@ class Qwen_Dual(baseframework):
         # align dims --> we should put them to config or no?
         self.config.framework.action_model.diffusion_model_cfg.cross_attention_dim = self.qwen_vl_interface.model.config.hidden_size
 
-        self.action_model: FlowmatchingActionHead = get_action_model(config=self.config)  # 修复后续引用
+        self.action_model: FlowmatchingActionHead = get_action_model(config=self.config)  # Fix later references
 
         self.dino_encoder = get_dino_model(
             backone_name=getattr(self.config.framework.dino, "dino_backbone", "dinov2_vits14")

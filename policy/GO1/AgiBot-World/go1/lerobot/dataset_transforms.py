@@ -69,11 +69,11 @@ class TransformedDataset(Dataset[DataDict]):
 @dataclasses.dataclass(frozen=True)
 class Normalize(DataTransformFn):
     norm_stats: Dict
-    # 要进行normalize的键名，可以是字符串或字符串列表，默认是"action"
+    # Keys to normalize; can be a string or a list of strings, defaulting to "action"
     key: str | list[str] = "action"
 
     def __call__(self, data: DataDict) -> DataDict:
-        # 确保key是列表格式
+        # Ensure key is in list format
         keys = [self.key] if isinstance(self.key, str) else self.key
 
         for k in keys:

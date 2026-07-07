@@ -30,7 +30,7 @@ def remove_comments_and_docstrings(source):
             pass
         elif token_type == tokenize.STRING:
             if prev_tok_type not in (tokenize.INDENT, tokenize.NEWLINE):
-                # 判断是否为 docstring
+                # as docstring
                 if re.match(r'^\s*"""(?:[^"]|"{1,2})*"""$', token_string) or re.match(
                         r"^\s*'''(?:[^']|'{1,2})*'''$", token_string):
                     continue
@@ -58,7 +58,7 @@ def get_method_source(filename, method_name):
 
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
-            # 遍历类中的所有方法
+            # iteratein allmethod
             for item in node.body:
                 if isinstance(item, ast.FunctionDef) and item.name == method_name:
                     lines = source.splitlines(keepends=True)
@@ -118,17 +118,17 @@ def replace_method_in_file_with_comments(filename, method_name, new_method_sourc
         if isinstance(node, ast.ClassDef):
             for item in node.body:
                 if isinstance(item, ast.FunctionDef) and item.name == method_name:
-                    start_line = item.lineno - 1  # lineno 是 1-based
+                    start_line = item.lineno - 1  # lineno 1-based
                     end_line = _get_function_end_line(item, lines)
 
-                    # 新方法内容按行分割，并保留缩进结构
-                    # 注意：new_method_source 应当是 new.txt 的原始字符串
+                    # methodbyrow, keep
+                    # Note: new_method_source new.txt
                     new_lines = new_method_source.splitlines(keepends=True)
 
-                    # 替换对应行区间
+                    # forrow
                     lines[start_line:end_line] = new_lines
 
-                    # 写回文件
+                    # file
                     with open(filename, "w", encoding="utf-8") as f:
                         f.writelines(lines)
                     return
@@ -267,13 +267,13 @@ def main(file_path, max_try=5, verbose=True):
     try_count = 0
     while try_count < max_try:
         try_count += 1
-        # Step 1: 提取类中的方法
+        # Step 1: extractin method
         method_source = get_method_source(file_path, "play_once")
 
-        # Step 2: 调用 AI 解析代码
+        # Step 2: use AI
         processed_source = parse(method_source, max_try=5, verbose=verbose)
 
-        # Step 3: 比较两个方法
+        # Step 3: method
         if compare_functions(method_source, processed_source):
             replace_method_in_file_with_comments(file_path, "play_once", processed_source)
             break

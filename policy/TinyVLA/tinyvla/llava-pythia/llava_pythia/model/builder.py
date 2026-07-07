@@ -99,7 +99,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
             if any(k.startswith('model.gpt_neox.') for k in non_lora_trainables):
                 non_lora_trainables = {(k[6:] if k.startswith('model.') else k): v for k, v in non_lora_trainables.items()}
             
-            # 删除lora相关的参数
+            # Delete LoRA-related parameters
             keys_to_del = []
             for k,v in non_lora_trainables.items():
                 if 'lora' in k:

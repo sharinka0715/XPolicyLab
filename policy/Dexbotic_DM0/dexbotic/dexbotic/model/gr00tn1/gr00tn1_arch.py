@@ -199,7 +199,7 @@ class GR00TN1Model(DexboticVLMModel):
     ):
         num_images = (cur_input_ids == IMAGE_TOKEN_INDEX).sum()
         if num_images == 0:
-            # 用来跳过填充的空图像
+            # useskippad Image
             cur_image_features = image_features[cur_image_idx]
             cur_input_embeds_1 = self.backbone.embed_tokens(cur_input_ids)
             cur_input_embeds = torch.cat(
@@ -355,7 +355,7 @@ class GR00TN1Model(DexboticVLMModel):
         # actions_mask = np.zeros((batch_size, n_action_tokens, self.config.max_action_dim), dtype=bool)
         actions_mask = torch.zeros(
             (batch_size, n_action_tokens, self.config.max_action_dim),
-            dtype=torch.bool,  # 对应 NumPy 的 dtype=bool
+            dtype=torch.bool,  # for NumPy dtype=bool
         )
         actions_mask[:, :, :n_action_dims] = True
         actions_mask = actions_mask.to(actions.device)

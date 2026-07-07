@@ -316,7 +316,7 @@ def dir_is_empty(dir: PathOrStr) -> bool:
     except StopIteration:
         return True
     except FileNotFoundError:
-        # 如果目录的父目录不存在，则认为目录为空
+        # ifdirectory directoryin, asdirectoryas
         return True
 
 
