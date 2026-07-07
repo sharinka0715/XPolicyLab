@@ -6,9 +6,9 @@
 
 </div>
 
-XPolicyLab provides shared standards and infrastructure for developing, serving, training, evaluating, and deploying robot policies. It keeps policy code, dependencies, checkpoints, and training recipes under `policy/<POLICY>/`, while exposing a common adapter contract for model serving and environment-side evaluation.
+XPolicyLab is the shared lane between policy code and evaluation environments. Keep each model's dependencies, checkpoints, and training recipes under `policy/<POLICY>/`; XPolicyLab handles the parts that are boring but easy to get wrong — serving, observation/action contracts, and eval wiring.
 
-Use this README for repository-level concepts and integration steps. For model-specific setup, checkpoints, and training details, start from the corresponding policy README.
+Start here for repo-level concepts and integration steps. For install commands, checkpoint layout, and training details, jump to that policy's README — it is the source of truth for its model.
 
 ## 🚀 What XPolicyLab Enables
 
@@ -190,6 +190,14 @@ With this setup, you can test data conversion, model loading, training scripts, 
 
 ```bash
 export EVAL_ENV_TYPE=debug
+cd policy/demo_policy
+bash eval.sh RoboDojo stack_bowls demo arx_x5 joint 0 0 0 base base
+```
+
+The template for any adapter is the same — swap `demo_policy` and the argument values:
+
+```bash
+export EVAL_ENV_TYPE=debug
 cd policy/<POLICY>
 bash eval.sh <bench_name> <task_name> <ckpt_name> <env_cfg_type> <action_type> \
   <seed> <policy_gpu_id> <env_gpu_id> <policy_env_or_uv_path> <eval_env_conda_env>
@@ -218,38 +226,52 @@ bash eval.sh <bench_name> <task_name> <ckpt_name> <env_cfg_type> <action_type> <
   <policy_gpu_id> <env_gpu_id> <policy_env_or_uv_path> <eval_env_conda_env>
 ```
 
-Common argument meanings:
+### What the arguments mean
 
-| Argument | Meaning |
-| --- | --- |
-| `bench_name` | Dataset or benchmark family, for example `RoboDojo`, `RoboTwin`, or a custom suite. Use `RoboDojo` for RoboDojo data/eval. |
-| `task_name` | Task or environment name used by the environment client. |
-| `ckpt_name` | Checkpoint/run identifier, full run directory, or policy-specific checkpoint path. |
-| `env_cfg_type` | Robot or environment configuration key, for example `arx_x5`. |
-| `action_type` | Action representation, usually `joint` or `ee`. |
-| `seed` | Training or evaluation seed. |
-| `policy_gpu_id` / `env_gpu_id` | GPU assignment for the policy process and environment process. |
-| `policy_env_or_uv_path` | Policy runtime environment name or uv environment path. |
-| `eval_env_conda_env` | Environment-client runtime environment. |
+When you run `eval.sh`, you are mostly answering: **which benchmark family**, **which task to run now**, **which checkpoint to load**, **which robot setup**, **joint or end-effector actions**, and **which seed**. The same names travel through `process_data.sh`, `train.sh`, and `eval.sh`, so you do not have to rename things at every step.
+
+| Argument | In plain English | Examples |
+| --- | --- | --- |
+| `bench_name` | Which benchmark or dataset family this run belongs to | `RoboDojo`, `RoboTwin` |
+| `task_name` | The task the environment client should run right now | `stack_bowls`, `push_T` — can differ from the tasks seen during training |
+| `ckpt_name` | Which weights to load: a short run nickname, the full run folder name, or a path | `cotrain`, `RoboDojo-cotrain-arx_x5-joint-0`, `checkpoints/my_run/` |
+| `env_cfg_type` | Robot / camera / scene configuration key | `arx_x5` |
+| `action_type` | Action space the policy outputs | usually `joint` or `ee` |
+| `seed` | Training or evaluation seed / layout id | `0`, `1`, `2` |
+| `policy_gpu_id` / `env_gpu_id` | Which GPU runs the model vs. the simulator/client | `0`, `1` |
+| `policy_env_or_uv_path` | Conda env name or uv env path for the policy server | your policy-side env |
+| `eval_env_conda_env` | Conda env for the simulator / robot client | your eval-side env |
+
+**How `ckpt_name` resolves.** Most of the time you pass the short nickname you used during training, such as `cotrain`. XPolicyLab combines it with the other args and looks under `checkpoints/RoboDojo-cotrain-arx_x5-joint-0/`. Already know the full folder name? Pass that instead. Weights live somewhere else? Pass a path — relative paths resolve from the policy directory, absolute paths work too. Some adapters also honor explicit keys in `deploy.yml` (`checkpoint_path`, `model_path`, ...). When in doubt, check the policy README.
+
+**A concrete eval example:**
+
+```bash
+cd policy/AHA_WAM
+bash eval.sh RoboDojo stack_bowls cotrain arx_x5 joint 0 0 0 aha_wam robodojo
+# loads checkpoints/RoboDojo-cotrain-arx_x5-joint-0/ and evaluates on stack_bowls
+```
 
 ## 🔌 Deployment Flow
 
-During evaluation, the environment process and policy process communicate through a policy server. This isolates simulator/robot dependencies from model dependencies and supports remote deployment.
+During evaluation, the policy server and the environment client talk over websocket. That split is what lets you keep Isaac Sim / robot drivers on one machine and a heavy VLA on another.
 
-For same-machine evaluation, use `eval.sh`; it starts the policy server, starts the environment client, and tears the policy server down when evaluation exits.
+For same-machine evaluation, `eval.sh` is enough — it starts the server, runs the client, and cleans up when you are done.
 
-For split-machine deployment, start the policy server first on the model/GPU machine:
+For split-machine deployment, start the policy server on the GPU machine and bind to `0.0.0.0` so other machines can reach it. The client connects to the policy machine's real IP, not `0.0.0.0`.
 
 ```bash
-bash policy/<POLICY>/setup_eval_policy_server.sh \
+cd policy/<POLICY>
+bash setup_eval_policy_server.sh \
   <bench_name> <task_name> <ckpt_name> <env_cfg_type> <action_type> <seed> \
   <policy_gpu_id> <policy_env_or_uv_path> <policy_server_port> 0.0.0.0
 ```
 
-Then start the environment client on the benchmark, simulator, or robot-side machine:
+Then start the environment client on the simulator or robot machine:
 
 ```bash
-bash policy/<POLICY>/setup_eval_env_client.sh \
+cd policy/<POLICY>
+bash setup_eval_env_client.sh \
   <bench_name> <task_name> <ckpt_name> <env_cfg_type> <action_type> <seed> \
   <env_gpu_id> <eval_env_conda_env> <additional_info> \
   <policy_server_port> <policy_server_ip>
@@ -257,9 +279,9 @@ bash policy/<POLICY>/setup_eval_env_client.sh \
 
 `EVAL_ENV_TYPE` selects the environment-side backend:
 
-- unset or `sim`: simulator-backed evaluation when the corresponding environment integration is installed.
-- `debug`: offline shape and IO check.
-- `real`: real-robot client path, only available where the corresponding hardware integration is installed.
+- unset or `sim`: real simulator-backed evaluation, when the integration is installed.
+- `debug`: offline wiring check — no Isaac, no robot, just shapes and IO.
+- `real`: real-robot client path, where the hardware integration exists.
 
 ## 📐 Standard Data Formats
 
@@ -366,14 +388,16 @@ from XPolicyLab.utils.process_data import decode_image_bit, get_robot_action_dim
 
 ## 💾 Data And Checkpoints
 
-By convention, converted datasets and checkpoints often use:
+Training and data prep usually name things predictably so eval can find them without guesswork:
 
 ```text
 <bench_name>-<ckpt_name>-<env_cfg_type>-<action_type>
 <bench_name>-<ckpt_name>-<env_cfg_type>-<action_type>-<seed>
 ```
 
-Policies may also accept explicit checkpoint paths or upstream-native layouts. Check the policy README before assuming a checkpoint name. For quick data downloads, use the demo workspace flow in [Quick Start](#-quick-start).
+So if you trained with `bench_name=RoboDojo`, `ckpt_name=cotrain`, `env_cfg_type=arx_x5`, `action_type=joint`, `seed=0`, the run lands in `checkpoints/RoboDojo-cotrain-arx_x5-joint-0/`. At eval time you can pass just `cotrain` and let XPolicyLab stitch the rest together — or pass the full folder name, or a direct path if your weights live elsewhere.
+
+Policies may also use upstream-native layouts or explicit paths in `deploy.yml`. Check the policy README before assuming a naming convention. For a small local dataset to play with, see [Quick Start](#-quick-start).
 
 ## ✅ Checks
 
@@ -397,7 +421,7 @@ bash eval.sh RoboDojo stack_bowls demo arx_x5 joint 0 0 0 \
   <policy_env_or_uv_path> <eval_env_conda_env>
 ```
 
-For a quick smoke test, use `policy/demo_policy` and placeholder env names such as `base`. See [Quick Start](#-quick-start) for full argument meanings.
+For a quick smoke test, try `policy/demo_policy` with placeholder env names such as `base`. Argument details live in [Common Workflow](#-common-workflow).
 
 ## 📬 Contact
 
