@@ -12,7 +12,7 @@
 | `README.md` | Supplemental documentation or environment metadata. |
 | `INSTALLATION.md` | Required supplemental installation guide for assets, system dependencies, or multi-environment setup. |
 | `install.sh` | Installs the policy-side runtime and editable dependencies. |
-| `process_data.sh` | Converts RoboDojo demonstration data into the policy-specific training format. |
+| `process_data.sh` | Prepares a LeRobot v2.1 dataset for training and computes normalization stats. |
 | `train.sh` | Launches the XPolicyLab training wrapper for this policy. |
 | `eval.sh` | Runs a same-machine policy server plus RoboDojo environment client evaluation. |
 | `setup_eval_policy_server.sh` | Starts only the policy server for distributed/debug evaluation. |
@@ -48,31 +48,41 @@ conda activate <policy_env>  # e.g. rise
 
 ## Demo Data Processing
 
-What it does: prepares RoboDojo demonstration data for policy training. The output name should match the training run identity so `train.sh` can find it.
+What it does: prepares a LeRobot v2.1 dataset for policy training and computes normalization stats. RISE consumes LeRobot v2.1 datasets directly — there is no HDF5 conversion step. The source dataset is provided through `RISE_RAW_DATASET`; the script links it into `data/<bench_name>-<ckpt_name>-<env_cfg_type>-<action_type>-lerobot/` so `train.sh` can find it.
 
 Parameters used by the command:
 
 | Parameter | Description |
 |---|---|
 | `bench_name` | Benchmark or dataset family, usually `RoboDojo`. |
-| `ckpt_name` | Data/run identifier. Use a different value for ablations, for example `stack_bowls_50ep`. |
+| `ckpt_name` | Data/run identifier. Use a different value for ablations, for example `stack_bowls_ablation`. |
 | `env_cfg_type` | Robot/environment configuration, for example `arx_x5`. |
 | `action_type` | Action representation, for example `joint`. |
-| `expert_data_num` | Optional trailing episode limit. Leave unset to use all episodes. |
 
-Demonstrations are read from `data/<bench_name>/<ckpt_name>/<env_cfg_type>/data/episode_*.hdf5` (relative to the RoboDojo repo root), so the raw data directory must be named after `ckpt_name`.
+Environment variables:
+
+| Variable | Description |
+|---|---|
+| `RISE_RAW_DATASET` | Path to the source LeRobot v2.1 dataset directory (contains `meta/` and `data/`). Required unless the standard `data/<tag>-lerobot/` link already exists. |
 
 ```bash
+# From the XPolicyLab repo root: download the full RoboDojo LeRobot v2.1 dataset.
+# It is saved to <data_root>/RoboDojo_lerobot_v21_video.
+bash scripts/RoboDojo/download_robodojo_data.sh huggingface lerobot_v2.1
+
 cd XPolicyLab/policy/RISE
-# Template: convert all available demonstrations for one run.
-bash process_data.sh <bench_name> <ckpt_name> <env_cfg_type> <action_type> [expert_data_num]
 
-# Example: convert stack_bowls demos for arx_x5 joint control.
+# Point RISE_RAW_DATASET at the full LeRobot v2.1 dataset.
+export RISE_RAW_DATASET=<data_root>/RoboDojo_lerobot_v21_video
+
+# Template: link the LeRobot v2.1 dataset and compute norm stats for one run.
+bash process_data.sh <bench_name> <ckpt_name> <env_cfg_type> <action_type>
+
+# Example: prepare stack_bowls for arx_x5 joint control on the full dataset.
 bash process_data.sh RoboDojo stack_bowls arx_x5 joint
-
-# Example: 50-episode ablation. Data must live at data/RoboDojo/stack_bowls_50ep/arx_x5.
-bash process_data.sh RoboDojo stack_bowls_50ep arx_x5 joint 50
 ```
+
+> The concrete shared LeRobot v2.1 dataset path for internal testing is recorded in `XPolicyLab/policy/POLICY_TRAINING_COMMANDS.md`.
 
 ## Model Training
 
@@ -223,13 +233,13 @@ Frequently used environment variables detected in the adapter scripts:
 | `CLEANUP` | Optional override used by the local scripts or upstream runtime. |
 | `CONDA_PREFIX` | Optional override used by the local scripts or upstream runtime. |
 | `CONVERTED_DATASET` | Optional override used by the local scripts or upstream runtime. |
-| `DATA_DIR` | Optional override used by the local scripts or upstream runtime. |
 | `DEFAULT_PI05_WEIGHTS` | Optional override used by the local scripts or upstream runtime. |
 | `DEFAULT_RAW_DATASET_LINK` | Optional override used by the local scripts or upstream runtime. |
 | `INSTALLATION` | Optional override used by the local scripts or upstream runtime. |
+| `RISE_RAW_DATASET` | Source LeRobot v2.1 dataset directory used by `process_data.sh` and `train.sh`. |
 
 ## Notes
 
-- Keep `ckpt_name` stable between data processing, training, and evaluation. For data-size ablations, encode the subset in `ckpt_name` such as `stack_bowls_50ep`.
+- Keep `ckpt_name` stable between data processing, training, and evaluation. For ablations, encode the variant in `ckpt_name` such as `stack_bowls_ablation`.
 - `task_name` is only the evaluation task; multi-task checkpoints can be evaluated on different tasks without renaming the checkpoint directory.
 - Prefer running `setup_eval_policy_server.sh` and `setup_eval_env_client.sh` separately when debugging dependency, CUDA, or model-loading issues.
