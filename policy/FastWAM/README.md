@@ -12,7 +12,6 @@
 | `README.md` | Supplemental documentation or environment metadata. |
 | `INSTALLATION.md` | Required supplemental installation guide for assets, system dependencies, or multi-environment setup. |
 | `install.sh` | Installs the policy-side runtime and editable dependencies. |
-| `process_data.sh` | Converts RoboDojo demonstration data into the policy-specific training format. |
 | `train.sh` | Launches the XPolicyLab training wrapper for this policy. |
 | `eval.sh` | Runs a same-machine policy server plus RoboDojo environment client evaluation. |
 | `setup_eval_policy_server.sh` | Starts only the policy server for distributed/debug evaluation. |
@@ -45,37 +44,9 @@ bash install.sh
 conda activate <policy_env>  # e.g. fastwam
 ```
 
-## Demo Data Processing
-
-What it does: prepares RoboDojo demonstration data for policy training. The output name should match the training run identity so `train.sh` can find it.
-
-Parameters used by the command:
-
-| Parameter | Description |
-|---|---|
-| `bench_name` | Benchmark or dataset family, usually `RoboDojo`. |
-| `ckpt_name` | Data/run identifier. Use a different value for ablations, for example `stack_bowls_50ep`. |
-| `env_cfg_type` | Robot/environment configuration, for example `arx_x5`. |
-| `action_type` | Action representation, for example `joint`. |
-| `expert_data_num` | Optional episode limit. Leave unset to use all episodes. |
-| `raw_task_dirs` | Optional source task directory or comma-separated task list when the script supports it. |
-| `dataset_id` | Optional explicit converted dataset id/output folder name. |
-
-```bash
-cd XPolicyLab/policy/FastWAM
-# Template: convert all available demonstrations for one run.
-bash process_data.sh <bench_name> <ckpt_name> <env_cfg_type> <action_type>
-
-# Example: convert stack_bowls demos for arx_x5 joint control.
-bash process_data.sh RoboDojo stack_bowls arx_x5 joint
-
-# Example: create a 50-episode ablation while reading from the original task data.
-bash process_data.sh RoboDojo stack_bowls_50ep arx_x5 joint 50 stack_bowls
-```
-
 ## Model Training
 
-What it does: starts the policy-specific training recipe through the XPolicyLab wrapper and writes checkpoints under this adapter directory.
+What it does: starts the policy-specific training recipe through the XPolicyLab wrapper and writes checkpoints under this adapter directory. Training expects a prepared LeRobot v2.1 dataset under `data/<dataset_id>/lerobot/` and a matching T5 text embedding cache under `FastWAM/data/text_embeds_cache/xpolicylab/<dataset_id>/`. See `TRAINING.md` for upstream data preparation steps.
 
 Parameters used by the command:
 
@@ -229,7 +200,7 @@ Frequently used environment variables detected in the adapter scripts:
 
 ## Notes
 
-- Use the same logical `ckpt_name` for data processing and training. During evaluation, pass the generated checkpoint directory name, usually `<bench_name>-<ckpt_name>-<env_cfg_type>-<action_type>-<seed>`.
+- Use the same logical `ckpt_name` for dataset layout and training. During evaluation, pass the generated checkpoint directory name, usually `<bench_name>-<ckpt_name>-<env_cfg_type>-<action_type>-<seed>`.
 - `task_name` is only the evaluation task; multi-task checkpoints can be evaluated on different tasks without renaming the checkpoint directory.
-- Use the same `action_type` for data processing, training, and evaluation. The reference FastWAM path follows XPolicyLab's `pack_robot_state` / `unpack_robot_state` helpers directly and does not add policy-local `ee` pose conversion.
+- Use the same `action_type` for training and evaluation. The reference FastWAM path follows XPolicyLab's `pack_robot_state` / `unpack_robot_state` helpers directly and does not add policy-local `ee` pose conversion.
 - Prefer running `setup_eval_policy_server.sh` and `setup_eval_env_client.sh` separately when debugging dependency, CUDA, or model-loading issues.

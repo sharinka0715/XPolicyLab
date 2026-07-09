@@ -12,7 +12,6 @@
 | `README.md` | Supplemental documentation or environment metadata. |
 | `INSTALLATION.md` | Required supplemental installation guide for assets, system dependencies, or multi-environment setup. |
 | `install.sh` | Installs the policy-side runtime and editable dependencies. |
-| `process_data.sh` | Converts RoboDojo demonstration data into the policy-specific training format. |
 | `train.sh` | Launches the XPolicyLab training wrapper for this policy. |
 | `eval.sh` | Runs a same-machine policy server plus RoboDojo environment client evaluation. |
 | `setup_eval_policy_server.sh` | Starts only the policy server for distributed/debug evaluation. |
@@ -45,42 +44,9 @@ bash install.sh
 source GalaxeaVLA/.venv/bin/activate  # or pass GalaxeaVLA as <policy_uv_env_path>
 ```
 
-## Demo Data Processing
-
-What it does: prepares RoboDojo demonstration data for policy training. The output name should match the training run identity so `train.sh` can find it.
-
-Parameters used by the command:
-
-| Parameter | Description |
-|---|---|
-| `bench_name` | Benchmark or dataset family, usually `RoboDojo`. |
-| `ckpt_name` | Data/run identifier. Use a different value for ablations, for example `stack_bowls_50ep`. |
-| `env_cfg_type` | Robot/environment configuration, for example `arx_x5`. |
-| `action_type` | Action representation, for example `joint`. |
-
-```bash
-cd XPolicyLab/policy/GalaxeaVLA
-# Template: convert all available demonstrations for one run.
-bash process_data.sh <bench_name> <ckpt_name> <env_cfg_type> <action_type>
-
-# Example: convert stack_bowls demos for arx_x5 joint control.
-bash process_data.sh RoboDojo stack_bowls arx_x5 joint
-```
-
-Batch conversion accepts an optional `max_episodes_per_task`; `0` means all episodes for every selected task.
-
-```bash
-cd XPolicyLab/policy/GalaxeaVLA
-# Template: convert a multi-task directory.
-bash process_data_batch.sh <bench_name> <ckpt_name> <env_cfg_type> <action_type> <batch_root> [max_episodes_per_task] [tasks...]
-
-# Example: convert all tasks and all episodes under the batch root.
-bash process_data_batch.sh RoboDojo cotrain arx_x5 joint /path/to/RoboDojo_data 0
-```
-
 ## Model Training
 
-What it does: starts the policy-specific training recipe through the XPolicyLab wrapper and writes checkpoints under this adapter directory.
+What it does: starts the policy-specific training recipe through the XPolicyLab wrapper and writes checkpoints under this adapter directory. Training expects a **LeRobot v3.0** dataset (with `meta/tasks.parquet`); set `GALAXEA_DATASET_DIR` to its root before running `train.sh`.
 
 Parameters used by the command:
 
@@ -95,6 +61,7 @@ Parameters used by the command:
 
 ```bash
 cd XPolicyLab/policy/GalaxeaVLA
+export GALAXEA_DATASET_DIR=/path/to/lerobot_v3_dataset
 # Template: train a policy run on one GPU or a GPU list.
 bash train.sh <bench_name> <ckpt_name> <env_cfg_type> <action_type> <seed> <gpu_id>
 
@@ -230,6 +197,6 @@ Frequently used environment variables detected in the adapter scripts:
 
 ## Notes
 
-- Keep `ckpt_name` stable between data processing, training, and evaluation. For data-size ablations, encode the subset in `ckpt_name` such as `stack_bowls_50ep`.
+- Keep `ckpt_name` stable between training and evaluation. For data-size ablations, encode the subset in `ckpt_name` such as `stack_bowls_50ep`.
 - `task_name` is only the evaluation task; multi-task checkpoints can be evaluated on different tasks without renaming the checkpoint directory.
 - Prefer running `setup_eval_policy_server.sh` and `setup_eval_env_client.sh` separately when debugging dependency, CUDA, or model-loading issues.

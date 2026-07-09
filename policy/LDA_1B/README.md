@@ -12,7 +12,7 @@
 | `README.md` | Supplemental documentation or environment metadata. |
 | `INSTALLATION.md` | Required supplemental installation guide for assets, system dependencies, or multi-environment setup. |
 | `install.sh` | Installs the policy-side runtime and editable dependencies. |
-| `process_data.sh` | Converts RoboDojo demonstration data into the policy-specific training format. |
+| `process_data.sh` | Generates an LDA `modality.json` over an existing LeRobot dataset. |
 | `train.sh` | Launches the XPolicyLab training wrapper for this policy. |
 | `eval.sh` | Runs a same-machine policy server plus RoboDojo environment client evaluation. |
 | `setup_eval_policy_server.sh` | Starts only the policy server for distributed/debug evaluation. |
@@ -46,30 +46,48 @@ conda activate LDA_1B
 
 ## Demo Data Processing
 
-What it does: prepares RoboDojo demonstration data for policy training. The output name should match the training run identity so `train.sh` can find it.
+What it does: reuses an EXISTING LeRobot v2.1 dataset (RoboDojo already ships
+parquet + encoded videos) and only (re)generates a gr00t-style
+`meta/modality.json` mapped to this robot's `*DataConfig` (e.g. `ArxX5DataConfig`
+expects `state.left_arm` / `video.cam_head`). No HDF5 conversion is performed.
+
+The output is a thin "view" dataset at `data/<bench>-<ckpt>-<env>-<action>/`
+whose `data/` and `videos/` symlink back to the source dataset, with a freshly
+written `modality.json` under a local (writable) `meta/`. Loader caches
+(`stats_gr00t.json`, `steps_*.pkl`) are written into that local `meta/`, so the
+shared source dataset is never mutated.
 
 Parameters used by the command:
 
 | Parameter | Description |
 |---|---|
 | `bench_name` | Benchmark or dataset family, usually `RoboDojo`. |
-| `ckpt_name` | Data/run identifier. Use a different value for ablations, for example `stack_bowls_50ep`. |
-| `env_cfg_type` | Robot/environment configuration, for example `arx_x5`. |
+| `ckpt_name` | Data/run identifier. Use a different value for ablations. |
+| `env_cfg_type` | Robot schema selector, for example `arx_x5`. |
 | `action_type` | Action representation, for example `joint`. |
-| `expert_data_num` | Optional episode limit. Leave unset to use all episodes. |
-| `raw_task_dirs` | Optional source task directory or comma-separated task list when the script supports it. |
-| `dataset_id` | Optional explicit converted dataset id/output folder name. |
+| `source_repo_id` | Existing LeRobot dataset folder under `LDA_LEROBOT_ROOT`. |
+
+Environment variables:
+
+| Variable | Notes |
+|---|---|
+| `LDA_LEROBOT_ROOT` | Source LeRobot root (required). Set to your LeRobot data root. |
+| `LDA_DATA_ROOT` | Output data root; default `policy/LDA_1B/data`. |
+| `LDA_DATASET_ID` | Override output folder name; default is the README §4.2 tag. |
 
 ```bash
 cd XPolicyLab/policy/LDA_1B
-# Template: convert all available demonstrations for one run.
-bash process_data.sh <bench_name> <ckpt_name> <env_cfg_type> <action_type>
+# Set this to the directory that holds your LeRobot dataset folders.
+export LDA_LEROBOT_ROOT=/path/to/your/lerobot
 
-# Example: convert stack_bowls demos for arx_x5 joint control.
-bash process_data.sh RoboDojo stack_bowls arx_x5 joint
+# Template: generate modality.json over an existing LeRobot dataset.
+bash process_data.sh <bench_name> <ckpt_name> <env_cfg_type> <action_type> <source_repo_id>
 
-# Example: create a 50-episode ablation while reading from the original task data.
-bash process_data.sh RoboDojo stack_bowls_50ep arx_x5 joint 50 stack_bowls
+# Example (5ep smoke): reuse RoboDojo_sim_arx-x5_v21_5ep.
+bash process_data.sh RoboDojo cotrain arx_x5 joint RoboDojo_sim_arx-x5_v21_5ep
+
+# Example (full training): reuse the full v2.1 dataset (drop the _5ep suffix).
+bash process_data.sh RoboDojo cotrain arx_x5 joint RoboDojo_sim_arx-x5_v21
 ```
 
 ## Model Training
