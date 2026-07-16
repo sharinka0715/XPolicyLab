@@ -22,4 +22,4 @@ use_ddim: true
 num_ddim_steps: 10
 image_size: [224, 224]
 execute_horizon: 16
-include_state: false
+include_state: auto

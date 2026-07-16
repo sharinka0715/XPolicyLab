@@ -100,7 +100,7 @@ checkpoint_path="$(realpath "${checkpoint_path}")"
 echo "[SERVER] resolved StarVLA checkpoint: ${checkpoint_path}"
 starvla_server_port=$(bash "${UTILS_DIR}/get_free_port.sh")
 starvla_server_host="127.0.0.1"
-starvla_include_state="${STARVLA_INCLUDE_STATE:-False}"
+starvla_include_state="${STARVLA_INCLUDE_STATE:-auto}"
 starvla_unnorm_key="${STARVLA_UNNORM_KEY:-arx_x5}"
 starvla_execute_horizon="${STARVLA_EXECUTE_HORIZON:-16}"
 starvla_image_size="${STARVLA_IMAGE_SIZE:-[224,224]}"

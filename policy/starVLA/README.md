@@ -34,8 +34,8 @@ same interface:
   ARX X5 absolute-joint state ordered as left arm, left gripper, right arm,
   and right gripper.
 - Normalize state with the checkpoint's `arx_x5` training statistics before
-  model inference. The gripper dimensions must use the same binary handling
-  as training.
+  model inference. The 50-step RoboDojo schema uses q99 normalization for all
+  dimensions, including the continuous grippers.
 - Return normalized actions with shape `[batch, horizon, 14]` and expose
   `action_chunk_size` through websocket server metadata. The runtime must
   unnormalize actions with the matching `arx_x5` statistics before returning
@@ -45,6 +45,16 @@ same interface:
 
 A separate checkout can be supplied through `starvla_root`; checkpoints and
 normalization statistics are user-provided and are not included here.
+
+Released checkpoints should retain their run-directory layout so the runtime
+can find `config.yaml`, `config.full.yaml`, and `dataset_statistics.json` next
+to the `checkpoints/` directory. The public data-mixture name is
+`robodojo_arx_x5_h50_q99`; `robodojo_v21_all_h50_q99` remains supported as a
+compatibility alias.
+
+`include_state: auto` reads `datasets.vla_data.include_state` from
+`config.yaml`, then falls back to `config.full.yaml` and finally `false`.
+`STARVLA_INCLUDE_STATE` remains the highest-priority explicit override.
 
 `starVLA` is the XPolicyLab/RoboDojo adapter for the corresponding policy. It keeps integration-facing scripts at this directory level and leaves the original or vendored implementation in the nested source tree when present.
 
@@ -62,6 +72,7 @@ normalization statistics are user-provided and are not included here.
 | `setup_eval_env_client.sh` | Starts only the RoboDojo environment client and connects to a policy server. |
 | `deploy.py` | Policy wrapper used by the XPolicyLab model server. |
 | `model.py` | Model adapter loaded by `deploy.py` or the policy server. |
+| `runtime_config.py` | Resolves checkpoint-driven inference options such as `include_state`. |
 | `deploy.yml` | Runtime configuration and default checkpoint/model parameters. |
 | `source_starvla/` | Vendored upstream code, policy-specific assets, or helper scripts. |
 
@@ -251,7 +262,7 @@ Policy-specific `deploy.yml` keys worth checking before evaluation:
 | `num_ddim_steps` | Runtime or checkpoint option consumed by this adapter. |
 | `image_size` | Runtime or checkpoint option consumed by this adapter. |
 | `execute_horizon` | Number of actions executed before requesting a new predicted chunk. |
-| `include_state` | Runtime or checkpoint option consumed by this adapter. |
+| `include_state` | `auto` reads the checkpoint config; an explicit boolean overrides it. |
 
 Frequently used environment variables detected in the adapter scripts:
 
@@ -265,7 +276,7 @@ Frequently used environment variables detected in the adapter scripts:
 | `STARVLA_CKPT_PATH` | Optional override used by the local scripts or upstream runtime. |
 | `STARVLA_EXECUTE_HORIZON` | Overrides the number of actions executed from each predicted chunk. |
 | `STARVLA_IMAGE_SIZE` | Overrides the input image size passed to the adapter. |
-| `STARVLA_INCLUDE_STATE` | Enables or disables proprioceptive state input. |
+| `STARVLA_INCLUDE_STATE` | Explicitly overrides checkpoint-driven proprioceptive state selection. |
 | `STARVLA_ROOT` | Optional override used by the local scripts or upstream runtime. |
 | `STARVLA_SERVER_PID` | Optional override used by the local scripts or upstream runtime. |
 | `STARVLA_UNNORM_KEY` | Selects the checkpoint normalization statistics. |

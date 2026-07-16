@@ -13,6 +13,7 @@ from XPolicyLab.utils.process_data import (
     pack_robot_state,
     unpack_robot_state,
 )
+from .runtime_config import resolve_include_state
 
 
 _CUR_DIR = Path(__file__).resolve().parent
@@ -120,7 +121,10 @@ class Model(ModelTemplate):
         self.use_ddim = bool(self.model_cfg.get("use_ddim", True))
         self.num_ddim_steps = int(self.model_cfg.get("num_ddim_steps", 10))
         self.image_size = tuple(self.model_cfg.get("image_size", [224, 224]))
-        self.include_state = bool(self.model_cfg.get("include_state", False))
+        self.include_state = resolve_include_state(
+            self.model_cfg.get("include_state", "auto"),
+            self.model_cfg.get("checkpoint_path"),
+        )
 
         self.obs_by_env: dict[int, dict[str, Any]] = {}
         self.action_chunks_by_env: dict[int, np.ndarray] = {}
@@ -130,7 +134,7 @@ class Model(ModelTemplate):
         print(
             f"[starVLA] connected to StarVLA server, action_dim={self.action_dim}, "
             f"chunk={self.action_chunk_size}, execute_horizon={self.execute_horizon}, "
-            f"action_order=xpolicy, metadata={server_meta}"
+            f"include_state={self.include_state}, action_order=xpolicy, metadata={server_meta}"
         )
 
     def _convert_obs(self, observation: dict[str, Any]) -> dict[str, Any]:
