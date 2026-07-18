@@ -76,8 +76,8 @@ bash eval.sh <bench_name> <task_name> <ckpt_name> <env_cfg_type> <action_type> <
 INTERNVLA_CKPT_PATH=/path/to/pretrained_model \
   bash eval.sh RoboDojo stack_bowls internvla_a1_5 arx_x5 joint 0 0 0 <policy_conda_env> <eval_env_conda_env>
 
-# The same override accepts the Hugging Face repo id after the model is uploaded.
-INTERNVLA_CKPT_PATH=<hf_user>/<hf_model_repo> \
+# Using the Hugging Face repo
+INTERNVLA_CKPT_PATH=hxma/internvla_a15_robodojo_60k \
   bash eval.sh RoboDojo stack_bowls internvla_a1_5 arx_x5 joint 0 0 0 <policy_conda_env> <eval_env_conda_env>
 ```
 
